@@ -1,19 +1,33 @@
 <template>
   <nav
-    class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 z-40"
-    :style="{ paddingBottom: safeBottom }"
+    class="fixed z-40"
+    :style="{
+      bottom: navBottom,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      width: 'min(calc(100vw - 48px), 432px)',
+      backdropFilter: 'blur(12px)',
+      background: 'rgba(255,255,255,0.8)',
+      border: '1px solid rgba(226,232,240,0.5)',
+      borderRadius: '40px',
+      padding: '17px 25px',
+      boxShadow: '0px 25px 50px -12px rgba(0,0,0,0.25)',
+    }"
   >
-    <div class="flex items-center">
+    <div class="flex items-center justify-between w-full">
       <button
         v-for="item in navItems"
         :key="item.name"
         @click="router.push(item.to)"
-        class="flex flex-col items-center justify-center flex-1 py-2 gap-0.5 transition-colors"
-        :class="isActive(item.to) ? 'text-brand' : 'text-gray-400'"
+        class="flex flex-col items-center cursor-pointer"
+        style="gap:4px;background:none;border:none;padding:0;"
       >
-        <component :is="item.icon" class="w-6 h-6" />
-        <span class="text-[10px] font-medium leading-tight">{{ t(item.label) }}</span>
-        <span v-if="isActive(item.to)" class="absolute bottom-0 w-1 h-1 rounded-full bg-brand" />
+        <component :is="item.icon" class="w-6 h-6" :class="isActive(item.to) ? 'text-[#16a34a]' : 'text-[#64748b]'" />
+        <span
+          :style="isActive(item.to)
+            ? 'font-size:10px;font-weight:700;color:#16a34a;line-height:15px;'
+            : 'font-size:10px;font-weight:500;color:#64748b;line-height:15px;'"
+        >{{ t(item.label) }}</span>
       </button>
     </div>
   </nav>
@@ -42,9 +56,9 @@ const navItems = [
 ]
 
 const tg = (window as any).Telegram?.WebApp
-const safeBottom = computed(() => {
+const navBottom = computed(() => {
   const bottom = tg?.safeAreaInset?.bottom ?? 0
-  return bottom > 0 ? `${bottom}px` : 'var(--tg-safe-bottom, env(safe-area-inset-bottom, 0px))'
+  return bottom > 0 ? `${bottom + 16}px` : 'calc(var(--tg-safe-bottom, env(safe-area-inset-bottom, 0px)) + 24px)'
 })
 
 function isActive(path: string) {

@@ -19,9 +19,9 @@ const topPad = computed(() => {
   return tgTop > 0 ? tgTop + 'px' : 'var(--tg-safe-top, 0px)'
 })
 
-// bottom: BottomNav height (64px) + Telegram bottom safe area
+// bottom: pill nav (77px) + 24px gap from bottom + safe area
 const bottomPad = computed(() => {
   const tgBottom = tg?.safeAreaInset?.bottom ?? 0
-  return `calc(68px + ${tgBottom}px + var(--tg-safe-bottom, 0px))`
+  return `calc(116px + ${tgBottom}px + var(--tg-safe-bottom, 0px))`
 })
 </script>

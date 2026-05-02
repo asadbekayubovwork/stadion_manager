@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-dvh bg-white flex flex-col px-6 pt-16 pb-8">
+  <div class="min-h-dvh bg-white flex flex-col px-6 pb-8" :style="{ paddingTop: topPad }">
     <!-- Logo -->
     <div class="w-14 h-14 rounded-2xl bg-brand-light flex items-center justify-center mb-8">
       <svg class="w-8 h-8 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
@@ -56,6 +56,12 @@ const { t } = useI18n()
 const router = useRouter()
 const phone = ref('')
 const focused = ref(false)
+
+const tg = (window as any).Telegram?.WebApp
+const topPad = computed(() => {
+  const top = tg?.contentSafeAreaInset?.top ?? tg?.safeAreaInset?.top ?? 0
+  return top > 0 ? `${top + 16}px` : 'calc(var(--tg-safe-top, 0px) + 4rem)'
+})
 
 const digits = computed(() => phone.value.replace(/\D/g, ''))
 const isValid = computed(() => digits.value.length === 9)

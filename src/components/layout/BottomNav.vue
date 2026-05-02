@@ -1,5 +1,8 @@
 <template>
-  <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 z-40 safe-bottom">
+  <nav
+    class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] bg-white border-t border-gray-100 z-40"
+    :style="{ paddingBottom: safeBottom }"
+  >
     <div class="flex items-center">
       <button
         v-for="item in navItems"
@@ -17,6 +20,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import HomeIcon from './icons/HomeIcon.vue'
@@ -36,6 +40,12 @@ const navItems = [
   { name: 'finance', to: '/finance', label: 'nav.finance', icon: WalletIcon },
   { name: 'settings', to: '/settings', label: 'nav.settings', icon: SettingsIcon },
 ]
+
+const tg = (window as any).Telegram?.WebApp
+const safeBottom = computed(() => {
+  const bottom = tg?.safeAreaInset?.bottom ?? 0
+  return bottom > 0 ? `${bottom}px` : 'var(--tg-safe-bottom, env(safe-area-inset-bottom, 0px))'
+})
 
 function isActive(path: string) {
   if (path === '/') return route.path === '/'

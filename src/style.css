@@ -33,3 +33,21 @@ body {
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 9999px; }
+
+/* ── Bottom sheet modal transitions ── */
+.sheet-enter-active,
+.sheet-leave-active {
+  transition: opacity 0.25s ease;
+}
+.sheet-enter-active .sheet-content,
+.sheet-leave-active .sheet-content {
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.sheet-enter-from,
+.sheet-leave-to {
+  opacity: 0;
+}
+.sheet-enter-from .sheet-content,
+.sheet-leave-to .sheet-content {
+  transform: translateY(100%);
+}

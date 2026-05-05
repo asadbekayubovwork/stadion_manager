@@ -1,73 +1,154 @@
 <template>
-  <div class="px-4 pt-5 pb-4">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-4">
-      <h1 class="text-2xl font-bold text-gray-900">{{ t('clients.title') }}</h1>
-      <span class="text-sm text-gray-400">{{ t('clients.total', { count: filtered.length }) }}</span>
-    </div>
+  <div class="flex flex-col" style="background:#f8fafc; min-height:100%; font-family:'Inter',sans-serif;">
 
-    <!-- Search -->
-    <div class="flex items-center gap-3 bg-white border-2 border-gray-200 rounded-2xl px-4 py-3 mb-5 focus-within:border-brand transition-colors">
-      <svg class="w-4 h-4 text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input
-        v-model="query"
-        type="search"
-        class="flex-1 outline-none text-sm font-medium text-gray-900 bg-transparent placeholder-gray-400"
-        :placeholder="t('common.search')"
-      />
-    </div>
-
-    <!-- Client list -->
-    <div v-if="filtered.length === 0" class="text-center py-16 text-gray-400">
-      <svg class="w-12 h-12 mx-auto mb-3 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      <p class="text-sm">{{ t('clients.noClients') }}</p>
-    </div>
-
-    <div class="flex flex-col gap-2">
+    <!-- ── HEADER ── -->
+    <div
+      style="background:#ffffff; border-bottom:1px solid #e2e8f0; padding:14px 16px;
+             display:flex; align-items:center; justify-content:space-between;"
+    >
+      <div style="font-size:22px; font-weight:900; color:#0f172a;">Mijozlar</div>
       <div
-        v-for="client in filtered"
-        :key="client.id"
-        @click="router.push('/clients/' + client.id)"
-        class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer active:bg-gray-50 transition-colors"
+        style="background:#dcfce7; padding:4px 12px; border-radius:100px;
+               display:flex; align-items:center; gap:4px;"
       >
-        <div class="w-11 h-11 rounded-full bg-brand-light flex items-center justify-center flex-shrink-0">
-          <span class="text-brand font-bold text-base">{{ client.name.charAt(0).toUpperCase() }}</span>
+        <span style="font-size:14px; font-weight:800; color:#14532d;
+                     font-family:'Inter', sans-serif;">{{ totalClients }}</span>
+        <span style="font-size:11px; color:#16a34a; font-weight:600;">jami</span>
+      </div>
+    </div>
+
+    <div style="padding:14px 16px 16px;">
+      <!-- Search -->
+      <div
+        style="background:#ffffff; border-radius:14px; padding:12px 14px;
+               display:flex; align-items:center; gap:10px;
+               border:1px solid #e2e8f0; box-shadow:0 1px 2px rgba(15,23,42,0.04);"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          v-model="query"
+          type="search"
+          placeholder="Ism yoki telefon bo'yicha..."
+          style="flex:1; outline:none; background:transparent; border:none;
+                 font-size:14px; font-weight:500; color:#0f172a; min-width:0;"
+        />
+      </div>
+
+      <!-- Section header -->
+      <div
+        style="font-size:11px; font-weight:700; color:#94a3b8;
+               text-transform:uppercase; letter-spacing:0.6px; margin:18px 0 10px;"
+      >
+        Ko'p qaytuvchi mijozlar
+      </div>
+
+      <!-- Client list -->
+      <div v-if="enriched.length === 0"
+           style="text-align:center; padding:40px 0; color:#94a3b8; font-size:14px;">
+        Mijozlar yo'q
+      </div>
+
+      <div v-else style="display:flex; flex-direction:column; gap:10px;">
+        <div
+          v-for="c in enriched"
+          :key="c.id"
+          @click="router.push('/clients/' + c.id)"
+          style="background:#ffffff; border-radius:14px; padding:12px 14px;
+                 display:flex; align-items:center; gap:12px; cursor:pointer;
+                 box-shadow:0 1px 4px rgba(15,23,42,0.06);"
+        >
+          <!-- Avatar -->
+          <div
+            :style="`width:44px; height:44px; border-radius:9999px;
+                     background:${c.color}; display:flex; align-items:center;
+                     justify-content:center; flex-shrink:0;`"
+          >
+            <span style="font-size:14px; font-weight:800; color:#ffffff;">{{ c.initials }}</span>
+          </div>
+
+          <!-- Name + phone -->
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:14px; font-weight:800; color:#0f172a;
+                        overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              {{ c.name }}
+            </div>
+            <div style="font-size:12px; color:#475569; font-weight:500; margin-top:2px;
+                        font-family:'Inter', sans-serif;">
+              {{ c.phone }}
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div style="text-align:right; flex-shrink:0;">
+            <div style="font-size:14px; font-weight:800; color:#16a34a;
+                        font-family:'Inter', sans-serif;">
+              {{ formatMoney(c.totalSpent) }}
+            </div>
+            <div style="font-size:11px; color:#94a3b8; font-weight:600; margin-top:2px;">
+              {{ c.visits }} tashrif
+            </div>
+          </div>
         </div>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-gray-900 text-sm">{{ client.name }}</p>
-          <p class="text-xs text-gray-500 mt-0.5">{{ client.phone }}</p>
-        </div>
-        <div class="text-right flex-shrink-0">
-          <p class="text-xs font-semibold text-gray-400">{{ bookingCount(client.id) }} ta bron</p>
-        </div>
-        <svg class="w-4 h-4 text-gray-300 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { useClientsStore } from '../stores/clients'
 import { useBookingsStore } from '../stores/bookings'
 
-const { t } = useI18n()
 const router = useRouter()
 const clientsStore = useClientsStore()
 const bookingsStore = useBookingsStore()
 const query = ref('')
 
-const filtered = computed(() => {
-  const q = query.value.toLowerCase()
-  if (!q) return clientsStore.clients
-  return clientsStore.clients.filter(c =>
+const AVATAR_COLORS = ['#16a34a', '#3b82f6', '#f97316', '#a855f7', '#ec4899', '#0ea5e9', '#14b8a6', '#f59e0b']
+
+function colorFor(name: string) {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = (hash << 5) - hash + name.charCodeAt(i)
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+}
+
+function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') }
+
+const enrichedAll = computed(() =>
+  clientsStore.clients.map(c => {
+    const bookings = bookingsStore.getForClient(c.id)
+    const paid = bookings.filter(b => b.paymentStatus === 'paid' && b.status === 'active')
+    return {
+      id: c.id,
+      name: c.name,
+      phone: c.phone,
+      initials: getInitials(c.name),
+      color: colorFor(c.name),
+      visits: bookings.filter(b => b.status === 'active').length,
+      totalSpent: paid.reduce((sum, b) => sum + b.price, 0),
+    }
+  }).sort((a, b) => b.totalSpent - a.totalSpent)
+)
+
+const enriched = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  if (!q) return enrichedAll.value
+  return enrichedAll.value.filter(c =>
     c.name.toLowerCase().includes(q) || c.phone.includes(q)
   )
 })
 
-function bookingCount(clientId: string) {
-  return bookingsStore.getForClient(clientId).length
-}
+const totalClients = computed(() => enrichedAll.value.length)
 </script>

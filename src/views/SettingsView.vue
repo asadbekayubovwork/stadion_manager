@@ -1,150 +1,380 @@
 <template>
-  <div class="px-4 pt-5 pb-6">
-    <h1 class="text-2xl font-bold text-gray-900 mb-5">{{ t('settings.title') }}</h1>
+  <div class="flex flex-col" style="background:#f8fafc; min-height:100%; font-family:'Inter',sans-serif;">
 
-    <!-- Language -->
-    <section class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
-      <p class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">{{ t('settings.language') }}</p>
-      <div class="flex gap-2">
-        <button
-          v-for="lang in langs"
-          :key="lang.key"
-          @click="setLang(lang.key)"
-          class="flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all"
-          :class="currentLang === lang.key ? 'bg-brand-light border-brand text-brand' : 'border-gray-200 text-gray-600'"
-        >
-          {{ lang.label }}
-        </button>
+    <!-- ── HEADER ── -->
+    <div
+      style="background:linear-gradient(135deg,#16a34a 0%, #0d8c3a 100%);
+             padding:14px 16px 20px; box-shadow:0 4px 16px rgba(22,163,74,0.25);"
+    >
+      <div style="font-size:18px; font-weight:900; color:#ffffff; margin-bottom:14px;">
+        Sozlamalar
       </div>
-    </section>
-
-    <!-- Stadiums -->
-    <section class="mb-4">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-xs font-bold text-gray-400 uppercase tracking-wide">{{ t('settings.stadiums') }}</p>
-        <button @click="openAddStadium()" class="flex items-center gap-1 text-brand text-sm font-semibold">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          {{ t('settings.addStadium') }}
-        </button>
-      </div>
-
-      <div class="flex flex-col gap-3">
+      <div style="display:flex; align-items:center; gap:14px;">
         <div
-          v-for="stadium in stadiumsStore.stadiums"
-          :key="stadium.id"
-          class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+          style="width:56px; height:56px; border-radius:16px;
+                 background:rgba(255,255,255,0.2); border:2px solid rgba(255,255,255,0.3);
+                 display:flex; align-items:center; justify-content:center; flex-shrink:0;"
         >
-          <!-- Stadium header -->
-          <div class="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-xl bg-brand-light flex items-center justify-center">
-                <svg class="w-4 h-4 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-              </div>
-              <span class="font-bold text-gray-900 text-sm">{{ stadium.name }}</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <button @click="openEditStadium(stadium)" class="p-1.5 rounded-lg bg-gray-100 text-gray-500">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              </button>
-              <button @click="deleteStadium(stadium.id)" class="p-1.5 rounded-lg bg-red-50 text-red-400">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-              </button>
-            </div>
+          <span style="font-size:22px; font-weight:900; color:#ffffff;">{{ userInitials }}</span>
+        </div>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:17px; font-weight:900; color:#ffffff;
+                      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            {{ auth.user?.name || 'Foydalanuvchi' }}
           </div>
-
-          <!-- Work hours -->
-          <div class="px-4 py-2 flex items-center gap-2 text-xs text-gray-500 border-b border-gray-50">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            {{ String(stadium.workStart).padStart(2,'0') }}:00 – {{ String(stadium.workEnd).padStart(2,'0') }}:00
+          <div style="font-size:13px; color:rgba(255,255,255,0.85); font-weight:500;
+                      margin-top:2px; font-family:'Inter', sans-serif;">
+            {{ auth.user?.phone || '—' }}
           </div>
-
-          <!-- Fields -->
-          <div class="px-4 py-3 space-y-2">
-            <div
-              v-for="field in stadium.fields"
-              :key="field.id"
-              class="flex items-center justify-between"
-            >
-              <div class="flex items-center gap-2">
-                <div class="w-2.5 h-2.5 rounded-full bg-brand" />
-                <span class="text-sm font-medium text-gray-800">{{ field.name }}</span>
-                <span class="text-xs text-gray-400">{{ formatMoney(field.pricePerHour) }}/h</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <button @click="openEditField(stadium.id, field)" class="p-1.5 rounded-lg bg-gray-100 text-gray-500">
-                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                </button>
-                <button @click="deleteField(stadium.id, field.id)" class="p-1.5 rounded-lg bg-red-50 text-red-400">
-                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
-                </button>
-              </div>
-            </div>
-            <button
-              @click="openAddField(stadium.id)"
-              class="flex items-center gap-1.5 text-brand text-xs font-semibold py-1.5"
-            >
-              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              {{ t('settings.addField') }}
-            </button>
+          <div
+            style="display:inline-flex; padding:3px 10px; border-radius:100px;
+                   background:rgba(255,255,255,0.18); margin-top:6px;"
+          >
+            <span style="font-size:11px; color:#ffffff; font-weight:700;">
+              {{ totalFields }} maydon · Pro tarif
+            </span>
           </div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- Logout -->
-    <button
-      @click="logout()"
-      class="w-full py-4 rounded-2xl border-2 border-red-200 text-red-500 font-bold text-sm mt-4 active:bg-red-50 transition-colors"
-    >
-      {{ t('settings.logout') }}
-    </button>
+    <div style="padding:16px;">
+
+      <!-- MAYDONLAR -->
+      <div style="font-size:11px; font-weight:700; color:#94a3b8;
+                  text-transform:uppercase; letter-spacing:0.6px; margin:4px 0 10px 4px;">
+        Maydonlar
+      </div>
+      <div
+        style="background:#ffffff; border-radius:14px; overflow:hidden;
+               box-shadow:0 2px 8px rgba(15,23,42,0.06); margin-bottom:18px;"
+      >
+        <div
+          v-for="(f, i) in allFields"
+          :key="f.id"
+          @click="openEditField(f.stadiumId, f)"
+          style="display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer;"
+          :style="i < allFields.length ? 'border-bottom:1px solid #f1f5f9;' : ''"
+        >
+          <div
+            style="width:36px; height:36px; border-radius:10px; background:#dcfce7;
+                   display:flex; align-items:center; justify-content:center; flex-shrink:0;"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"/>
+              <line x1="12" y1="4" x2="12" y2="20"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:14px; font-weight:800; color:#0f172a;">{{ f.name }}</div>
+            <div style="font-size:12px; color:#94a3b8; font-weight:500;">
+              {{ formatMoney(f.pricePerHour) }} so'm/soat
+            </div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+
+        <!-- Add field row -->
+        <div
+          @click="openAddField(activeStadiumId)"
+          style="display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer;"
+        >
+          <div
+            style="width:36px; height:36px; border-radius:10px;
+                   background:#dcfce7; border:1.5px dashed #16a34a;
+                   display:flex; align-items:center; justify-content:center; flex-shrink:0;"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:800; color:#16a34a;">Maydon qo'shish</div>
+            <div style="font-size:12px; color:#94a3b8; font-weight:500;">Yangi maydon yaratish</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NARX VA VAQT -->
+      <div style="font-size:11px; font-weight:700; color:#94a3b8;
+                  text-transform:uppercase; letter-spacing:0.6px; margin:4px 0 10px 4px;">
+        Narx va vaqt
+      </div>
+      <div
+        style="background:#ffffff; border-radius:14px; overflow:hidden;
+               box-shadow:0 2px 8px rgba(15,23,42,0.06); margin-bottom:18px;"
+      >
+        <div
+          @click="openPriceModal"
+          style="display:flex; align-items:center; gap:12px; padding:14px 16px;
+                 border-bottom:1px solid #f1f5f9; cursor:pointer;"
+        >
+          <div
+            style="width:36px; height:36px; border-radius:10px; background:#fff7ed;
+                   display:flex; align-items:center; justify-content:center; flex-shrink:0;"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+            </svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:800; color:#0f172a;">Soatlik narx</div>
+            <div style="font-size:12px; color:#94a3b8; font-weight:500;">
+              {{ avgPriceLabel }}
+            </div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+
+        <div
+          @click="openEditStadium(activeStadium)"
+          style="display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer;"
+        >
+          <div
+            style="width:36px; height:36px; border-radius:10px; background:#eff6ff;
+                   display:flex; align-items:center; justify-content:center; flex-shrink:0;"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:800; color:#0f172a;">Ish vaqti</div>
+            <div style="font-size:12px; color:#94a3b8; font-weight:500;
+                        font-family:'Inter', sans-serif;">
+              {{ workHoursLabel }}
+            </div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- TIZIM -->
+      <div style="font-size:11px; font-weight:700; color:#94a3b8;
+                  text-transform:uppercase; letter-spacing:0.6px; margin:4px 0 10px 4px;">
+        Tizim
+      </div>
+      <div
+        style="background:#ffffff; border-radius:14px; overflow:hidden;
+               box-shadow:0 2px 8px rgba(15,23,42,0.06); margin-bottom:18px;"
+      >
+        <div
+          @click="langModalOpen = true"
+          style="display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer;"
+        >
+          <div
+            style="width:36px; height:36px; border-radius:10px; background:#f1f5f9;
+                   display:flex; align-items:center; justify-content:center; flex-shrink:0;"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+            </svg>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:14px; font-weight:800; color:#0f172a;">Til</div>
+            <div style="font-size:12px; color:#94a3b8; font-weight:500;">{{ langLabel }}</div>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Logout -->
+      <button
+        @click="logout"
+        style="width:100%; padding:14px; border-radius:14px;
+               background:#ffffff; border:1.5px solid #fee2e2; cursor:pointer;
+               display:flex; align-items:center; justify-content:center; gap:8px;"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span style="font-size:14px; font-weight:800; color:#ef4444;">Chiqish</span>
+      </button>
+    </div>
 
     <!-- Stadium modal -->
     <Teleport to="body">
-      <div v-if="stadiumModal" class="fixed inset-0 z-50 flex items-end" @click.self="stadiumModal = null">
-        <div class="w-full max-w-[480px] mx-auto bg-white rounded-t-3xl shadow-2xl p-5 pb-8">
-          <div class="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-4" />
-          <h3 class="font-bold text-gray-900 mb-4">{{ stadiumModal.id ? t('settings.editStadium') : t('settings.addStadium') }}</h3>
-          <div class="space-y-3">
-            <div>
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">{{ t('settings.stadiumName') }}</label>
-              <input v-model="stadiumModal.name" type="text" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand" />
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">{{ t('settings.workStart') }}</label>
-                <input v-model.number="stadiumModal.workStart" type="number" min="0" max="23" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand" />
+      <Transition name="sheet" appear>
+        <div v-if="stadiumModal" class="fixed inset-0 z-50 flex items-end" style="background:rgba(15,23,42,0.4);"
+             @click.self="stadiumModal = null">
+          <div
+            class="sheet-content w-full mx-auto"
+            style="max-width:480px; background:#ffffff; border-radius:24px 24px 0 0;
+                   box-shadow:0 -8px 32px rgba(0,0,0,0.2); padding:20px 20px 32px;
+                   font-family:'Inter', sans-serif;"
+          >
+          <div style="width:40px; height:4px; border-radius:2px; background:#e2e8f0;
+                      margin:0 auto 16px;" />
+          <div style="font-size:17px; font-weight:900; color:#0f172a; margin-bottom:16px;">
+            Ish vaqti
+          </div>
+          <div style="display:flex; gap:12px;">
+            <div style="flex:1;">
+              <div style="font-size:11px; font-weight:700; color:#94a3b8;
+                          text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+                Boshlanish
               </div>
-              <div>
-                <label class="text-xs font-semibold text-gray-500 mb-1 block">{{ t('settings.workEnd') }}</label>
-                <input v-model.number="stadiumModal.workEnd" type="number" min="1" max="24" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand" />
-              </div>
+              <input
+                v-model.number="stadiumModal.workStart"
+                type="number" min="0" max="23"
+                style="width:100%; height:48px; border-radius:12px; border:1.5px solid #e2e8f0;
+                       padding:0 14px; outline:none; font-size:16px; font-weight:800; color:#0f172a;
+                       font-family:'Inter', sans-serif;"
+              />
             </div>
-            <button @click="saveStadium()" class="w-full py-3.5 bg-brand text-white rounded-2xl font-bold text-sm mt-1">{{ t('common.save') }}</button>
+            <div style="flex:1;">
+              <div style="font-size:11px; font-weight:700; color:#94a3b8;
+                          text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+                Tugash
+              </div>
+              <input
+                v-model.number="stadiumModal.workEnd"
+                type="number" min="1" max="24"
+                style="width:100%; height:48px; border-radius:12px; border:1.5px solid #e2e8f0;
+                       padding:0 14px; outline:none; font-size:16px; font-weight:800; color:#0f172a;
+                       font-family:'Inter', sans-serif;"
+              />
+            </div>
+          </div>
+          <button
+            @click="saveStadium"
+            style="width:100%; height:52px; border-radius:14px; background:#16a34a;
+                   color:#ffffff; font-size:15px; font-weight:800; border:none;
+                   margin-top:16px; cursor:pointer; box-shadow:0 4px 12px rgba(22,163,74,0.3);"
+          >
+            Saqlash
+          </button>
           </div>
         </div>
-      </div>
+      </Transition>
     </Teleport>
 
     <!-- Field modal -->
     <Teleport to="body">
-      <div v-if="fieldModal" class="fixed inset-0 z-50 flex items-end" @click.self="fieldModal = null">
-        <div class="w-full max-w-[480px] mx-auto bg-white rounded-t-3xl shadow-2xl p-5 pb-8">
-          <div class="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-4" />
-          <h3 class="font-bold text-gray-900 mb-4">{{ fieldModal.id ? t('settings.editField') : t('settings.addField') }}</h3>
-          <div class="space-y-3">
+      <Transition name="sheet" appear>
+        <div v-if="fieldModal" class="fixed inset-0 z-50 flex items-end" style="background:rgba(15,23,42,0.4);"
+             @click.self="fieldModal = null">
+          <div
+            class="sheet-content w-full mx-auto"
+            style="max-width:480px; background:#ffffff; border-radius:24px 24px 0 0;
+                   box-shadow:0 -8px 32px rgba(0,0,0,0.2); padding:20px 20px 32px;
+                   font-family:'Inter', sans-serif;"
+          >
+          <div style="width:40px; height:4px; border-radius:2px; background:#e2e8f0;
+                      margin:0 auto 16px;" />
+          <div style="font-size:17px; font-weight:900; color:#0f172a; margin-bottom:16px;">
+            {{ fieldModal.id ? 'Maydonni tahrirlash' : 'Maydon qo\'shish' }}
+          </div>
+          <div style="display:flex; flex-direction:column; gap:12px;">
             <div>
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">{{ t('settings.fieldName') }}</label>
-              <input v-model="fieldModal.name" type="text" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand" />
+              <div style="font-size:11px; font-weight:700; color:#94a3b8;
+                          text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+                Nomi
+              </div>
+              <input
+                v-model="fieldModal.name"
+                type="text"
+                placeholder="Maydon 1"
+                style="width:100%; height:48px; border-radius:12px; border:1.5px solid #e2e8f0;
+                       padding:0 14px; outline:none; font-size:15px; font-weight:600; color:#0f172a;"
+              />
             </div>
             <div>
-              <label class="text-xs font-semibold text-gray-500 mb-1 block">{{ t('settings.pricePerHour') }}</label>
-              <input v-model.number="fieldModal.pricePerHour" type="number" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-brand" />
+              <div style="font-size:11px; font-weight:700; color:#94a3b8;
+                          text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
+                Soatlik narx (so'm)
+              </div>
+              <input
+                v-model.number="fieldModal.pricePerHour"
+                type="number"
+                style="width:100%; height:48px; border-radius:12px; border:1.5px solid #e2e8f0;
+                       padding:0 14px; outline:none; font-size:15px; font-weight:600; color:#0f172a;
+                       font-family:'Inter', sans-serif;"
+              />
             </div>
-            <button @click="saveField()" class="w-full py-3.5 bg-brand text-white rounded-2xl font-bold text-sm mt-1">{{ t('common.save') }}</button>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <button
+              v-if="fieldModal.id"
+              @click="deleteField(fieldModal.stadiumId, fieldModal.id)"
+              style="flex:1; height:52px; border-radius:14px; background:#fee2e2;
+                     color:#ef4444; font-size:15px; font-weight:800; border:none; cursor:pointer;"
+            >
+              O'chirish
+            </button>
+            <button
+              @click="saveField"
+              style="flex:2; height:52px; border-radius:14px; background:#16a34a;
+                     color:#ffffff; font-size:15px; font-weight:800; border:none; cursor:pointer;
+                     box-shadow:0 4px 12px rgba(22,163,74,0.3);"
+            >
+              Saqlash
+            </button>
+          </div>
           </div>
         </div>
-      </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Language modal -->
+    <Teleport to="body">
+      <Transition name="sheet" appear>
+        <div v-if="langModalOpen" class="fixed inset-0 z-50 flex items-end" style="background:rgba(15,23,42,0.4);"
+             @click.self="langModalOpen = false">
+          <div
+            class="sheet-content w-full mx-auto"
+            style="max-width:480px; background:#ffffff; border-radius:24px 24px 0 0;
+                   box-shadow:0 -8px 32px rgba(0,0,0,0.2); padding:20px 20px 32px;
+                   font-family:'Inter', sans-serif;"
+          >
+          <div style="width:40px; height:4px; border-radius:2px; background:#e2e8f0;
+                      margin:0 auto 16px;" />
+          <div style="font-size:17px; font-weight:900; color:#0f172a; margin-bottom:16px;">Til</div>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <button
+              v-for="lang in langs"
+              :key="lang.key"
+              @click="setLang(lang.key); langModalOpen = false"
+              :style="currentLang === lang.key
+                ? 'padding:14px 16px; border-radius:12px; border:1.5px solid #16a34a; background:#dcfce7; color:#14532d; font-size:15px; font-weight:800; text-align:left; cursor:pointer; display:flex; align-items:center; justify-content:space-between;'
+                : 'padding:14px 16px; border-radius:12px; border:1.5px solid #e2e8f0; background:#ffffff; color:#0f172a; font-size:15px; font-weight:600; text-align:left; cursor:pointer; display:flex; align-items:center; justify-content:space-between;'"
+            >
+              {{ lang.label }}
+              <svg v-if="currentLang === lang.key" width="20" height="20" viewBox="0 0 24 24"
+                   fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </button>
+          </div>
+          </div>
+        </div>
+      </Transition>
     </Teleport>
   </div>
 </template>
@@ -155,54 +385,88 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useStadiumsStore } from '../stores/stadiums'
 import { useAuthStore } from '../stores/auth'
-import type { Field } from '../types'
+import type { Field, Stadium } from '../types'
 
-const { t, locale } = useI18n()
+const { locale } = useI18n()
 const router = useRouter()
 const stadiumsStore = useStadiumsStore()
-const authStore = useAuthStore()
+const auth = useAuthStore()
 
 const langs = [
-  { key: 'uz', label: "O'zbek" },
+  { key: 'uz', label: "O'zbek (lotin)" },
   { key: 'ru', label: 'Русский' },
   { key: 'en', label: 'English' },
 ]
 const currentLang = computed(() => locale.value)
+const langLabel = computed(() => langs.find(l => l.key === currentLang.value)?.label || 'O\'zbek')
+const langModalOpen = ref(false)
+
 function setLang(lang: string) {
-  locale.value = lang
+  locale.value = lang as any
   localStorage.setItem('sm_lang', lang)
 }
+
+const userInitials = computed(() => {
+  const name = auth.user?.name?.trim() || ''
+  if (!name) return 'A'
+  const parts = name.split(/\s+/)
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
+})
+
+const activeStadium = computed(() => stadiumsStore.activeStadium)
+const activeStadiumId = computed(() => stadiumsStore.activeStadiumId)
+
+const allFields = computed<(Field & { stadiumId: string })[]>(() =>
+  stadiumsStore.stadiums.flatMap(s =>
+    s.fields.map(f => ({ ...f, stadiumId: s.id }))
+  )
+)
+
+const totalFields = computed(() => allFields.value.length)
+
+const avgPriceLabel = computed(() => {
+  if (allFields.value.length === 0) return 'O\'rnatilmagan'
+  const avg = Math.round(
+    allFields.value.reduce((sum, f) => sum + f.pricePerHour, 0) / allFields.value.length
+  )
+  return `${formatMoney(avg)} so'm/soat`
+})
+
+const workHoursLabel = computed(() => {
+  const s = activeStadium.value
+  if (!s) return '—'
+  return `${String(s.workStart).padStart(2, '0')}:00 — ${String(s.workEnd).padStart(2, '0')}:00`
+})
+
+function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') }
 
 // Stadium modal
 interface StadiumForm { id?: string; name: string; workStart: number; workEnd: number }
 const stadiumModal = ref<StadiumForm | null>(null)
-function openAddStadium() { stadiumModal.value = { name: '', workStart: 6, workEnd: 24 } }
-function openEditStadium(s: { id: string; name: string; workStart: number; workEnd: number }) {
+function openEditStadium(s: Stadium | undefined) {
+  if (!s) return
   stadiumModal.value = { id: s.id, name: s.name, workStart: s.workStart, workEnd: s.workEnd }
 }
 function saveStadium() {
-  if (!stadiumModal.value?.name) return
+  if (!stadiumModal.value) return
   if (stadiumModal.value.id) {
     stadiumsStore.updateStadium(stadiumModal.value.id, {
       name: stadiumModal.value.name,
       workStart: stadiumModal.value.workStart,
       workEnd: stadiumModal.value.workEnd,
     })
-  } else {
-    stadiumsStore.addStadium(stadiumModal.value.name, stadiumModal.value.workStart, stadiumModal.value.workEnd)
   }
   stadiumModal.value = null
-}
-function deleteStadium(id: string) {
-  if (confirm(t('settings.confirmDeleteStadium'))) {
-    stadiumsStore.deleteStadium(id)
-  }
 }
 
 // Field modal
 interface FieldForm { id?: string; stadiumId: string; name: string; pricePerHour: number }
 const fieldModal = ref<FieldForm | null>(null)
-function openAddField(stadiumId: string) { fieldModal.value = { stadiumId, name: '', pricePerHour: 200000 } }
+function openAddField(stadiumId: string) {
+  if (!stadiumId) return
+  fieldModal.value = { stadiumId, name: '', pricePerHour: 200000 }
+}
 function openEditField(stadiumId: string, f: Field) {
   fieldModal.value = { id: f.id, stadiumId, name: f.name, pricePerHour: f.pricePerHour }
 }
@@ -219,17 +483,22 @@ function saveField() {
   fieldModal.value = null
 }
 function deleteField(stadiumId: string, fieldId: string) {
-  if (confirm(t('settings.confirmDeleteField'))) {
+  if (confirm('Maydonni o\'chirishni tasdiqlaysizmi?')) {
     stadiumsStore.deleteField(stadiumId, fieldId)
+    fieldModal.value = null
   }
+}
+
+function openPriceModal() {
+  // Open the first field's editor as a shortcut, or the active field
+  const f = allFields.value[0]
+  if (f) openEditField(f.stadiumId, f)
 }
 
 function logout() {
-  if (confirm(t('settings.confirmLogout'))) {
-    authStore.logout()
+  if (confirm('Tizimdan chiqishni tasdiqlaysizmi?')) {
+    auth.logout()
     router.push({ name: 'login' })
   }
 }
-
-function formatMoney(n: number) { return n.toLocaleString('uz-UZ') }
 </script>

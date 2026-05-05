@@ -3,58 +3,76 @@
 
     <!-- ── HEADER ── -->
     <div
-      class="flex flex-col gap-2 px-6 pb-6"
+      class="flex flex-col gap-2 px-6 pb-4"
       :style="{ paddingTop: headerTopPad }"
     >
-      <!-- Logo area -->
       <div class="relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0">
-       <img src="/logo.png" alt="Maydon" />
+        <img src="/logo.png" alt="Maydon" />
       </div>
 
-      <!-- Title -->
       <div class="pt-6">
         <h1 style="font-size:30px; font-weight:700; color:#0f172a; letter-spacing:-0.75px; line-height:36px; margin:0;">
-          Hush kelibsiz
+          Ro'yxatdan o'tish
         </h1>
       </div>
-
-      <!-- Subtitle -->
       <p style="font-size:16px; font-weight:400; color:#64748b; line-height:24px; margin:0;">
-        Tizimga kirish uchun ma'lumotlaringizni kiriting
+        Yangi hisob yarating
       </p>
     </div>
 
-    <!-- ── MIDDLE ── -->
-    <div class="flex-1 flex flex-col px-6 pt-2" style="gap:16px;">
+    <!-- ── SCROLLABLE FORM ── -->
+    <div
+      class="flex-1 overflow-y-auto px-6"
+      style="padding-top: 8px; padding-bottom: 24px; display:flex; flex-direction:column; gap:14px;"
+    >
 
-      <!-- Phone label -->
-      <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px; display:block;">
+      <!-- Full name -->
+      <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
+        To'liq ism
+      </label>
+      <div
+        class="flex items-center bg-white"
+        style="padding:17px; border-radius:16px; transition: box-shadow 0.15s; margin-top:-8px;"
+        :style="focusedName
+          ? 'border: 1px solid rgba(22,163,74,0.8); box-shadow: 0px 0px 0px 4px rgba(22,163,74,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1);'
+          : 'border: 1px solid rgba(22,163,74,0.4); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'"
+      >
+        <svg class="flex-shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <input
+          v-model="name"
+          type="text"
+          placeholder="Alisher Umarov"
+          class="w-full bg-transparent outline-none"
+          style="font-size:18px; font-weight:500; color:#0f172a; border:none; padding-left:12px;"
+          @focus="focusedName = true"
+          @blur="focusedName = false"
+        />
+      </div>
+
+      <!-- Phone -->
+      <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
         Telefon raqam
       </label>
-
-      <!-- Phone input -->
       <div
         class="flex items-center bg-white rounded-2xl transition-shadow"
-        style="padding: 17px; border-radius: 16px; position: relative; margin-top: -8px;"
-        :style="phoneFocused
-          ? 'border: 1px solid rgba(22,163,74,0.8); box-shadow: 0px 0px 0px 4px rgba(22,163,74,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1);'
+        style="padding: 17px; border-radius: 16px; margin-top:-8px;"
+        :style="focusedPhone
+          ? 'border: 1px solid rgba(22,163,74,0.8); box-shadow: 0px 0px 0px 4px rgba(22,163,74,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1);'
           : 'border: 1px solid rgba(22,163,74,0.5); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'"
       >
-        <!-- Country prefix -->
         <div class="flex items-center flex-shrink-0" style="padding-right:17px; border-right: 1px solid rgba(226,232,240,0.7); gap:8px;">
-          <!-- Uzbekistan flag -->
           <div class="overflow-hidden flex-shrink-0" style="width:24px; height:16px; border-radius:12px; border:1px solid #e2e8f0;">
             <div style="height:5.25px; background:#0099b5;" />
             <div style="height:3.5px; background:#ffffff;" />
             <div style="height:5.25px; background:#1eb53a;" />
           </div>
-          <!-- +998 -->
           <span style="font-size:18px; font-weight:600; color:#0f172a; letter-spacing:0.45px; line-height:28px; white-space:nowrap;">
             +998
           </span>
         </div>
-
-        <!-- Phone number input -->
         <div class="flex-1 flex items-center" style="padding-left:16px;">
           <input
             v-model="phone"
@@ -64,44 +82,37 @@
             maxlength="12"
             class="w-full bg-transparent outline-none"
             style="font-size:20px; font-weight:500; color:#0f172a; letter-spacing:0.5px; line-height:28px; border:none;"
-            @focus="phoneFocused = true"
-            @blur="phoneFocused = false"
+            @focus="focusedPhone = true"
+            @blur="focusedPhone = false"
             @input="formatPhone"
           />
         </div>
       </div>
 
-      <!-- Password label -->
-      <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px; display:block;">
+      <!-- Password -->
+      <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
         Parol
       </label>
-
-      <!-- Password input -->
       <div
-        class="flex items-center bg-white rounded-2xl transition-shadow"
-        style="padding: 17px; border-radius: 16px; position: relative; margin-top: -8px;"
-        :style="passwordFocused
-          ? 'border: 1px solid rgba(22,163,74,0.8); box-shadow: 0px 0px 0px 4px rgba(22,163,74,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1);'
+        class="flex items-center bg-white"
+        style="padding:17px; border-radius:16px; margin-top:-8px;"
+        :style="focusedPassword
+          ? 'border: 1px solid rgba(22,163,74,0.8); box-shadow: 0px 0px 0px 4px rgba(22,163,74,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1);'
           : 'border: 1px solid rgba(22,163,74,0.4); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'"
       >
-        <!-- Lock icon -->
         <svg class="flex-shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="11" width="18" height="11" rx="2"/>
           <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
-
         <input
           v-model="password"
           :type="showPassword ? 'text' : 'password'"
-          placeholder="Parolingiz"
+          placeholder="Kamida 4 ta belgi"
           class="w-full bg-transparent outline-none"
           style="font-size:18px; font-weight:500; color:#0f172a; letter-spacing:0.5px; line-height:28px; border:none; padding-left:12px;"
-          @focus="passwordFocused = true"
-          @blur="passwordFocused = false"
-          @keyup.enter="proceed"
+          @focus="focusedPassword = true"
+          @blur="focusedPassword = false"
         />
-
-        <!-- Show/hide -->
         <button
           type="button"
           @click="showPassword = !showPassword"
@@ -119,63 +130,98 @@
         </button>
       </div>
 
-      <!-- Security note -->
-      <div class="flex items-center" style="gap:8px; padding-top:4px;">
-        <svg class="flex-shrink-0" width="16" height="16" viewBox="0 0 12 14.6689" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M11.3333 8.0003C11.3333 11.3336 9 13.0003 6.22667 13.967C6.08144 14.0162 5.92369 14.0138 5.78 13.9603C3 13.0003 0.666667 11.3336 0.666667 8.0003V3.33363C0.666667 2.96569 0.96539 2.66697 1.33333 2.66697C2.66667 2.66697 4.33333 1.86697 5.49333 0.853633C5.78512 0.604345 6.21488 0.604345 6.50667 0.853633C7.67333 1.87363 9.33333 2.66697 10.6667 2.66697C11.0346 2.66697 11.3333 2.96569 11.3333 3.33363V8.0003Z"
-                stroke="#16A34A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M4 7.33363L5.33333 8.66697L8 6.0003"
-                stroke="#16A34A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Confirm password -->
+      <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
+        Parolni tasdiqlang
+      </label>
+      <div
+        class="flex items-center bg-white"
+        style="padding:17px; border-radius:16px; margin-top:-8px;"
+        :style="focusedConfirm
+          ? 'border: 1px solid rgba(22,163,74,0.8); box-shadow: 0px 0px 0px 4px rgba(22,163,74,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1);'
+          : passwordsMatch && password.length > 0
+            ? 'border: 1px solid rgba(22,163,74,0.5); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'
+            : confirmTouched && !passwordsMatch
+              ? 'border: 1px solid rgba(244,63,94,0.6); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'
+              : 'border: 1px solid rgba(22,163,74,0.4); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'"
+      >
+        <svg class="flex-shrink-0" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
         </svg>
-        <span style="font-size:12px; font-weight:500; color:#64748b; line-height:16px;">
-          Ma'lumotlaringiz ishonchli himoyalangan
-        </span>
+        <input
+          v-model="passwordConfirm"
+          :type="showPassword ? 'text' : 'password'"
+          placeholder="Parolni qayta kiriting"
+          class="w-full bg-transparent outline-none"
+          style="font-size:18px; font-weight:500; color:#0f172a; letter-spacing:0.5px; line-height:28px; border:none; padding-left:12px;"
+          @focus="focusedConfirm = true"
+          @blur="focusedConfirm = false; confirmTouched = true"
+        />
+        <div
+          v-if="passwordsMatch && password.length > 0"
+          class="flex-shrink-0 flex items-center justify-center"
+          style="width:22px; height:22px; border-radius:6px; background:#dcfce7;"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
       </div>
+
+      <!-- Mismatch hint -->
+      <p
+        v-if="confirmTouched && passwordConfirm.length > 0 && !passwordsMatch"
+        style="font-size:12px; font-weight:500; color:#f43f5e; margin:0; padding-left:2px;"
+      >
+        Parollar mos kelmadi
+      </p>
+
     </div>
 
     <!-- ── BOTTOM BUTTON ── -->
     <div
-      class="flex flex-col"
-      style="padding: 17px 24px 0; backdrop-filter: blur(6px); background: rgba(248,250,252,0.8); border-top: 1px solid transparent; gap:14px;"
+      class="flex flex-col px-6"
+      style="padding-top:16px; backdrop-filter: blur(8px); background: rgba(248,250,252,0.92); border-top: 1px solid rgba(226,232,240,0.6); gap:14px;"
       :style="{ paddingBottom: buttonBottomPad }"
     >
       <button
-        @click="proceed"
+        @click="register"
         :disabled="!isValid"
         class="relative flex items-center justify-center w-full transition-all active:scale-95"
-        style="height:61.5px; border-radius:9999px; border:none; cursor:pointer;"
+        style="height:61.5px; min-height:61.5px; flex-shrink:0; border-radius:9999px; border:none; cursor:pointer;"
         :style="isValid
-          ? 'background:#16a34a; box-shadow:0px 1px 3px 0px rgba(22,163,74,0.2), 0px 1px 2px -1px rgba(22,163,74,0.2);'
+          ? 'background:#16a34a; box-shadow:0px 4px 14px rgba(22,163,74,0.3);'
           : 'background:#e2e8f0; cursor:not-allowed;'"
       >
         <span
-          style="font-size:17px; font-weight:600; line-height:25.5px; letter-spacing:0;"
+          style="font-size:17px; font-weight:600; line-height:25.5px;"
           :style="isValid ? 'color:#ffffff;' : 'color:#94a3b8;'"
         >
-          Kirish
+          Ro'yxatdan o'tish
         </span>
         <svg
           v-if="isValid"
           class="absolute"
           style="right: 20px; top: 50%; transform: translateY(-50%);"
-          width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"
+          width="20" height="20" viewBox="0 0 20 20" fill="none"
         >
           <path d="M4.16667 10H15.8333M10 4.16667L15.8333 10L10 15.8333"
                 stroke="white" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
 
-      <!-- Register link -->
+      <!-- Back to login -->
       <div class="flex items-center justify-center" style="gap:6px;">
         <span style="font-size:14px; font-weight:500; color:#64748b; line-height:20px;">
-          Hisobingiz yo'qmi?
+          Hisobingiz bormi?
         </span>
         <button
           type="button"
-          @click="router.push({ name: 'register' })"
+          @click="router.push({ name: 'login' })"
           style="background:transparent; border:none; cursor:pointer; padding:0; font-size:14px; font-weight:700; color:#16a34a; line-height:20px;"
         >
-          Ro'yxatdan o'tish →
+          ← Kirish
         </button>
       </div>
     </div>
@@ -192,10 +238,16 @@ import { nanoid } from '../utils/nanoid'
 const router = useRouter()
 const auth = useAuthStore()
 
+const name = ref('')
 const phone = ref('')
 const password = ref('')
-const phoneFocused = ref(false)
-const passwordFocused = ref(false)
+const passwordConfirm = ref('')
+
+const focusedName = ref(false)
+const focusedPhone = ref(false)
+const focusedPassword = ref(false)
+const focusedConfirm = ref(false)
+const confirmTouched = ref(false)
 const showPassword = ref(false)
 
 const tg = (window as any).Telegram?.WebApp
@@ -207,11 +259,18 @@ const headerTopPad = computed(() => {
 
 const buttonBottomPad = computed(() => {
   const bottom = tg?.safeAreaInset?.bottom ?? 0
-  return bottom > 0 ? `${bottom + 24}px` : 'calc(var(--tg-safe-bottom, env(safe-area-inset-bottom, 0px)) + 40px)'
+  return bottom > 0 ? `${bottom + 16}px` : 'calc(var(--tg-safe-bottom, env(safe-area-inset-bottom, 0px)) + 24px)'
 })
 
 const digits = computed(() => phone.value.replace(/\D/g, ''))
-const isValid = computed(() => digits.value.length === 9 && password.value.length >= 4)
+const passwordsMatch = computed(() => password.value === passwordConfirm.value)
+const isValid = computed(
+  () =>
+    name.value.trim().length >= 2 &&
+    digits.value.length === 9 &&
+    password.value.length >= 4 &&
+    passwordsMatch.value
+)
 
 function formatPhone(e: Event) {
   const raw = (e.target as HTMLInputElement).value.replace(/\D/g, '').slice(0, 9)
@@ -222,12 +281,12 @@ function formatPhone(e: Event) {
   phone.value = f
 }
 
-function proceed() {
+function register() {
   if (!isValid.value) return
   auth.login({
     id: nanoid(),
     phone: '+998' + digits.value,
-    name: '',
+    name: name.value.trim(),
     stadiumIds: [],
   })
   const isOnboarded = localStorage.getItem('sm_onboarded') === 'true'

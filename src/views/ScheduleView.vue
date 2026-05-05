@@ -1,186 +1,180 @@
 <template>
-  <div class="flex flex-col h-[calc(100dvh-72px)]">
-    <!-- Header -->
-    <div class="bg-white px-4 pt-4 pb-2 border-b border-gray-100 flex-shrink-0">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-xl bg-brand-light flex items-center justify-center">
-            <svg class="w-5 h-5 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          </div>
-          <div>
-            <div class="font-bold text-gray-900 text-base leading-tight">{{ t('schedule.title') }}</div>
-            <div class="text-xs text-gray-500">{{ formatDateFull(selectedDate) }}</div>
-          </div>
+  <div class="flex flex-col" style="background:#f8fafc; min-height:100%; font-family:'Inter',sans-serif;">
+
+    <!-- ── HEADER ── -->
+    <div style="background:#ffffff; border-bottom:1px solid #e2e8f0;">
+      <!-- Title row -->
+      <div style="padding:12px 16px 8px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:18px; font-weight:900; color:#0f172a;">{{ monthLabel }}</div>
+          <div style="font-size:12px; color:#475569; font-weight:500;">Jadval ko'rinishi</div>
         </div>
-        <button class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-          <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <button
+          @click="openNewBooking()"
+          style="height:36px; border-radius:10px; background:#16a34a; padding:0 14px;
+                 display:flex; align-items:center; justify-content:center; gap:6px;
+                 border:none; cursor:pointer; box-shadow:0 4px 12px rgba(22,163,74,0.3);"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span style="font-size:13px; font-weight:800; color:#ffffff;">Bron</span>
         </button>
       </div>
 
-      <!-- Date strip -->
-      <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
-        <button
-          v-for="d in dateStrip"
+      <!-- Week strip -->
+      <div style="display:flex; padding:0 8px 8px; gap:2px;">
+        <div
+          v-for="d in weekStrip"
           :key="d.value"
           @click="selectDate(d.value)"
-          class="flex-shrink-0 flex flex-col items-center w-12 py-2 rounded-xl transition-all"
-          :class="d.value === selectedDate ? 'bg-brand text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'"
+          style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;
+                 padding-top:4px; cursor:pointer;"
         >
-          <span class="text-[10px] font-medium uppercase">{{ d.weekday }}</span>
-          <span class="text-lg font-bold leading-tight">{{ d.day }}</span>
-        </button>
+          <span style="font-size:11px; color:#94a3b8; font-weight:600;">{{ d.weekday }}</span>
+          <div
+            :style="d.value === selectedDate
+              ? 'width:32px; height:32px; border-radius:10px; background:#16a34a; display:flex; align-items:center; justify-content:center;'
+              : 'width:32px; height:32px; border-radius:10px; background:transparent; display:flex; align-items:center; justify-content:center;'"
+          >
+            <span
+              :style="d.value === selectedDate
+                ? 'font-size:14px; font-weight:800; color:#ffffff;'
+                : d.faded
+                  ? 'font-size:14px; font-weight:800; color:#94a3b8;'
+                  : 'font-size:14px; font-weight:800; color:#0f172a;'"
+            >{{ d.day }}</span>
+          </div>
+        </div>
       </div>
 
-      <!-- Field filter -->
-      <div v-if="fields.length > 0" class="flex gap-2 overflow-x-auto py-2 scrollbar-none -mx-1 px-1">
-        <button
+      <!-- Field tabs -->
+      <div v-if="fields.length > 0" style="display:flex; gap:8px; padding:0 16px 12px;">
+        <div
           v-for="f in fields"
           :key="f.id"
           @click="selectField(f.id)"
-          class="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all"
-          :class="f.id === selectedFieldId
-            ? 'bg-brand-light text-brand border border-brand/30'
-            : 'bg-gray-100 text-gray-500'"
+          :style="f.id === selectedFieldId
+            ? 'flex:1; height:36px; border-radius:10px; background:#16a34a; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; font-weight:700; color:#ffffff;'
+            : 'flex:1; height:36px; border-radius:10px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; font-weight:700; color:#475569;'"
         >
           {{ f.name }}
-        </button>
+        </div>
       </div>
     </div>
 
-    <!-- Timeline -->
-    <div ref="timelineEl" class="flex-1 overflow-y-auto relative" @scroll="onScroll">
-      <div class="relative" :style="{ height: timelineHeight + 'px' }">
+    <!-- ── TIMELINE ── -->
+    <div ref="timelineEl" style="flex:1; padding:0 12px 12px; overflow-y:auto;">
+      <div style="position:relative;" :style="{ height: timelineHeight + 'px' }">
 
-        <!-- Hour lines -->
+        <!-- Hour rows -->
         <div
           v-for="hour in hours"
           :key="hour"
-          class="absolute left-0 right-0 flex items-start"
+          style="position:absolute; left:0; right:0; display:flex; gap:10px;"
           :style="{ top: hourToY(hour) + 'px' }"
         >
-          <span class="w-14 text-xs text-gray-400 font-medium text-right pr-3 leading-none -translate-y-2">
-            {{ String(hour).padStart(2, '0') }}:00
-          </span>
-          <div class="flex-1 border-t border-gray-100" />
+          <div style="width:44px; padding-top:4px; flex-shrink:0; display:flex; justify-content:flex-end;">
+            <span
+              :style="isCurrentHour(hour)
+                ? 'font-size:12px; font-weight:700; color:#16a34a;'
+                : 'font-size:12px; font-weight:700; color:#94a3b8;'"
+            >{{ String(hour).padStart(2, '0') }}:00</span>
+          </div>
         </div>
 
-        <!-- Now indicator -->
+        <!-- Now indicator line -->
         <div
           v-if="isToday && nowY >= 0"
-          class="absolute left-0 right-0 flex items-center pointer-events-none z-10"
+          style="position:absolute; left:54px; right:0; pointer-events:none; z-index:2;"
           :style="{ top: nowY + 'px' }"
         >
-          <span class="w-14 flex justify-end pr-2">
-            <span class="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
-          </span>
-          <div class="flex-1 h-px bg-red-400" />
+          <div style="height:2px; background:#16a34a; border-radius:2px;">
+            <div style="width:10px; height:10px; border-radius:9999px; background:#16a34a;
+                        position:absolute; left:-5px; top:-4px;" />
+          </div>
         </div>
 
-        <!-- Empty slot overlays -->
-        <template v-for="slot in emptySlots" :key="'empty-' + slot.startTime">
+        <!-- Empty slot cards -->
+        <div
+          v-for="slot in emptySlots"
+          :key="'empty-' + slot.startTime"
+          @click="openNewBooking(slot.startTime)"
+          style="position:absolute; left:54px; right:0; padding:6px 0; cursor:pointer;"
+          :style="{ top: slotY(slot.startTime) + 'px', height: slot.heightPx + 'px' }"
+        >
           <div
-            @click="openNewBooking(slot.startTime)"
-            class="absolute left-14 right-2 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/50 flex items-center justify-between px-4 cursor-pointer hover:border-brand/40 hover:bg-brand-light/30 transition-colors group"
-            :style="{ top: slotY(slot.startTime) + 2 + 'px', height: slot.heightPx - 4 + 'px' }"
+            style="height:100%; min-height:36px; border-radius:12px;
+                   border:1.5px dashed #e2e8f0; display:flex; align-items:center;
+                   justify-content:center; gap:6px; transition:all 0.15s;"
+            class="hover-empty"
           >
-            <span class="text-sm font-medium text-gray-400 group-hover:text-brand">{{ t('schedule.empty') }}</span>
-            <span class="w-7 h-7 rounded-full border-2 border-gray-300 group-hover:border-brand group-hover:text-brand flex items-center justify-center text-gray-400 font-bold text-lg leading-none">+</span>
+            <div
+              style="width:22px; height:22px; border-radius:6px; background:#dcfce7;
+                     display:flex; align-items:center; justify-content:center;"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a"
+                   stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </div>
+            <span style="font-size:12px; color:#94a3b8; font-weight:600;">Bo'sh joy</span>
           </div>
-        </template>
+        </div>
 
         <!-- Booking cards -->
         <div
           v-for="b in dayBookings"
           :key="b.id"
-          @click="openBookingMenu(b)"
-          @contextmenu.prevent="openBookingMenu(b)"
-          class="absolute left-14 right-2 rounded-xl px-4 py-3 cursor-pointer active:scale-[0.98] transition-transform shadow-sm"
-          :class="b.paymentStatus === 'unpaid' ? 'bg-booked' : 'bg-booked'"
-          :style="{ top: slotY(b.startTime) + 2 + 'px', height: bookingHeight(b) - 4 + 'px' }"
+          @click="openBookingDetail(b)"
+          style="position:absolute; left:54px; right:0; padding:6px 0; cursor:pointer;"
+          :style="{ top: slotY(b.startTime) + 'px', height: bookingHeight(b) + 'px' }"
         >
-          <div class="flex items-start justify-between gap-2">
-            <div class="min-w-0">
-              <div class="text-[10px] font-bold text-orange-100 uppercase tracking-wide mb-0.5">{{ t('schedule.booked') }}</div>
-              <div class="text-white font-bold text-sm truncate">{{ b.clientName }}</div>
-              <div class="text-orange-100 text-xs mt-0.5">{{ b.startTime }} — {{ b.endTime }}</div>
-            </div>
-            <div class="flex-shrink-0 text-right">
-              <div v-if="b.paymentStatus === 'paid'" class="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
-                <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          <div
+            :style="`height:100%; border-radius:12px;
+                     background:linear-gradient(135deg, #fed7aa 0%, ${b.paymentStatus === 'paid' ? 'rgba(249,115,22,0.13)' : 'rgba(249,115,22,0.20)'} 100%);
+                     border:1.5px solid rgba(249,115,22,0.4); padding:8px 12px;
+                     display:flex; flex-direction:column; justify-content:center; gap:2px;`"
+          >
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+              <div style="font-size:13px; font-weight:800; color:#9a3412; min-width:0;
+                          overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
+                {{ b.clientName }}
               </div>
-              <div v-else class="text-[10px] font-bold text-orange-100 bg-white/10 px-2 py-0.5 rounded-full">{{ t('schedule.debt') }}</div>
+              <div
+                :style="b.paymentStatus === 'paid'
+                  ? 'width:20px; height:20px; border-radius:6px; background:#16a34a; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-left:6px;'
+                  : 'width:20px; height:20px; border-radius:6px; background:#f97316; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-left:6px;'"
+              >
+                <svg v-if="b.paymentStatus === 'paid'" width="12" height="12" viewBox="0 0 24 24"
+                     fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none"
+                     stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
             </div>
-          </div>
-          <div v-if="bookingHeight(b) >= 60" class="mt-1 text-xs text-orange-100 font-semibold">
-            {{ formatMoney(b.price) }} UZS
+            <div style="font-size:11px; color:#9a3412; font-weight:600; font-family:'Inter', sans-serif;">
+              {{ b.startTime }}–{{ b.endTime }}<span v-if="bookingHeight(b) >= 56"> · {{ formatMoney(b.price) }} so'm</span>
+            </div>
+            <div v-if="bookingHeight(b) >= 64"
+                 style="font-size:11px; color:#9a3412; opacity:0.7; font-weight:500;">
+              {{ b.clientPhone }}
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- FAB -->
-    <button
-      @click="openNewBooking()"
-      class="fixed bottom-20 right-4 w-14 h-14 rounded-full bg-brand shadow-xl shadow-brand/40 flex items-center justify-center z-30 active:scale-95 transition-transform"
-    >
-      <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    </button>
-
-    <!-- Booking context menu -->
-    <Transition name="fade">
-      <div v-if="menuBooking" class="fixed inset-0 z-50 flex items-end" @click.self="menuBooking = null">
-        <div class="w-full max-w-[480px] mx-auto bg-white rounded-t-3xl shadow-2xl p-5 pb-8">
-          <div class="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-5" />
-          <div class="mb-4">
-            <p class="font-bold text-gray-900 text-base">{{ menuBooking.clientName }}</p>
-            <p class="text-sm text-gray-500">{{ menuBooking.startTime }} — {{ menuBooking.endTime }} · {{ fieldName(menuBooking.fieldId) }}</p>
-          </div>
-          <div class="flex flex-col gap-2">
-            <button
-              v-if="menuBooking.paymentStatus === 'unpaid'"
-              @click="markPaid('cash')"
-              class="flex items-center gap-3 py-3.5 px-4 rounded-2xl bg-brand-light text-brand font-semibold text-sm"
-            >
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-              {{ t('booking.markPaid') }} ({{ t('booking.cash') }})
-            </button>
-            <button
-              v-if="menuBooking.paymentStatus === 'unpaid'"
-              @click="markPaid('card')"
-              class="flex items-center gap-3 py-3.5 px-4 rounded-2xl bg-brand-light text-brand font-semibold text-sm"
-            >
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-              {{ t('booking.markPaid') }} ({{ t('booking.card') }})
-            </button>
-            <button
-              @click="editBooking()"
-              class="flex items-center gap-3 py-3.5 px-4 rounded-2xl bg-gray-100 text-gray-700 font-semibold text-sm"
-            >
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              {{ t('common.edit') }}
-            </button>
-            <button
-              @click="duplicateBooking()"
-              class="flex items-center gap-3 py-3.5 px-4 rounded-2xl bg-gray-100 text-gray-700 font-semibold text-sm"
-            >
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              {{ t('booking.duplicate') }}
-            </button>
-            <button
-              @click="cancelB()"
-              class="flex items-center gap-3 py-3.5 px-4 rounded-2xl bg-red-50 text-red-500 font-semibold text-sm"
-            >
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-              {{ t('booking.cancelBooking') }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-
     <!-- Booking Modal -->
     <BookingModal
-      v-if="showModal"
+      :show="showModal"
       :booking="editingBooking"
       :default-date="selectedDate"
       :default-time="defaultTime"
@@ -193,24 +187,23 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useStadiumsStore } from '../stores/stadiums'
 import { useBookingsStore } from '../stores/bookings'
 import type { Booking } from '../types'
 import dayjs from 'dayjs'
 import BookingModal from '../components/booking/BookingModal.vue'
 
-const { t } = useI18n()
+const router = useRouter()
 const stadiumsStore = useStadiumsStore()
 const bookingsStore = useBookingsStore()
 
-const PX_PER_MIN = 1.2 // pixels per minute
+const PX_PER_MIN = 1.2
 const HOUR_HEIGHT = PX_PER_MIN * 60
 
 const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
 const selectedFieldId = ref(stadiumsStore.activeFieldId)
 const timelineEl = ref<HTMLElement>()
-const menuBooking = ref<Booking | null>(null)
 const showModal = ref(false)
 const editingBooking = ref<Booking | null>(null)
 const defaultTime = ref('')
@@ -220,11 +213,11 @@ const isToday = computed(() => selectedDate.value === dayjs().format('YYYY-MM-DD
 const workStart = computed(() => stadiumsStore.activeStadium?.workStart ?? 6)
 const workEnd = computed(() => stadiumsStore.activeStadium?.workEnd ?? 24)
 const hours = computed(() => {
-  const h = []
-  for (let i = workStart.value; i <= workEnd.value; i++) h.push(i)
+  const h: number[] = []
+  for (let i = workStart.value; i < workEnd.value; i++) h.push(i)
   return h
 })
-const timelineHeight = computed(() => (workEnd.value - workStart.value) * HOUR_HEIGHT + 40)
+const timelineHeight = computed(() => (workEnd.value - workStart.value) * HOUR_HEIGHT + 24)
 
 const fields = computed(() => stadiumsStore.activeStadium?.fields ?? [])
 
@@ -240,18 +233,33 @@ const nowY = computed(() => {
   return mins * PX_PER_MIN
 })
 
-const dateStrip = computed(() => {
-  const base = dayjs().subtract(1, 'day')
-  const days = []
-  const weekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
-  for (let i = 0; i < 14; i++) {
-    const d = base.add(i, 'day')
-    days.push({ value: d.format('YYYY-MM-DD'), day: d.date(), weekday: weekdays[d.day()] })
-  }
-  return days
+const MONTHS_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr']
+const monthLabel = computed(() => {
+  const d = dayjs(selectedDate.value)
+  return `${MONTHS_UZ[d.month()]} ${d.year()}`
 })
 
-// Slot geometry helpers
+const WEEKDAYS_UZ_SHORT = ['Ya', 'D', 'S', 'Ch', 'P', 'J', 'Sh']
+
+const weekStrip = computed(() => {
+  const today = dayjs()
+  const ref = dayjs(selectedDate.value)
+  const start = ref.subtract(ref.day(), 'day')
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = start.add(i, 'day')
+    return {
+      value: d.format('YYYY-MM-DD'),
+      day: d.date(),
+      weekday: WEEKDAYS_UZ_SHORT[d.day()],
+      faded: d.isBefore(today, 'day'),
+    }
+  })
+})
+
+function isCurrentHour(hour: number) {
+  return isToday.value && dayjs().hour() === hour
+}
+
 function hourToY(hour: number) {
   return (hour - workStart.value) * HOUR_HEIGHT
 }
@@ -264,7 +272,6 @@ function bookingHeight(b: Booking) {
   return b.durationMin * PX_PER_MIN
 }
 
-// Empty slots between bookings
 const emptySlots = computed(() => {
   const slots: { startTime: string; endTime: string; heightPx: number }[] = []
   const booked = [...dayBookings.value].sort((a, b) => a.startTime.localeCompare(b.startTime))
@@ -299,49 +306,18 @@ function selectField(id: string) {
   selectedFieldId.value = id
   stadiumsStore.setActiveField(id)
 }
-function fieldName(fieldId: string) {
-  return fields.value.find(f => f.id === fieldId)?.name ?? fieldId
-}
-function formatMoney(n: number) { return n.toLocaleString('uz-UZ') }
-function formatDateFull(d: string) {
-  return dayjs(d).format('D MMMM YYYY')
-}
+function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') }
 
 function openNewBooking(time?: string) {
   editingBooking.value = null
   defaultTime.value = time ?? ''
   showModal.value = true
 }
-function openBookingMenu(b: Booking) { menuBooking.value = b }
-function editBooking() {
-  editingBooking.value = menuBooking.value
-  menuBooking.value = null
-  showModal.value = true
-}
-function duplicateBooking() {
-  if (!menuBooking.value) return
-  const b = menuBooking.value
-  editingBooking.value = null
-  defaultTime.value = b.startTime
-  menuBooking.value = null
-  showModal.value = true
-}
-function markPaid(method: 'cash' | 'card') {
-  if (!menuBooking.value) return
-  bookingsStore.markPaid(menuBooking.value.id, method)
-  menuBooking.value = null
-}
-function cancelB() {
-  if (!menuBooking.value) return
-  if (confirm(t('booking.confirmCancel'))) {
-    bookingsStore.cancelBooking(menuBooking.value.id)
-    menuBooking.value = null
-  }
+function openBookingDetail(b: Booking) {
+  router.push({ name: 'booking-detail', params: { id: b.id } })
 }
 function onSaved() { showModal.value = false }
-function onScroll() {}
 
-// Scroll to work start or now on mount
 onMounted(async () => {
   await nextTick()
   if (timelineEl.value) {
@@ -356,8 +332,8 @@ watch(() => stadiumsStore.activeFieldId, id => { selectedFieldId.value = id })
 </script>
 
 <style scoped>
-.fade-enter-active, .fade-leave-active { transition: opacity 0.15s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-.scrollbar-none { scrollbar-width: none; }
-.scrollbar-none::-webkit-scrollbar { display: none; }
+.hover-empty:hover {
+  border-color: rgba(22, 163, 74, 0.4) !important;
+  background: rgba(22, 163, 74, 0.04);
+}
 </style>

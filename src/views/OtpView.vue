@@ -5,9 +5,7 @@
       {{ t('auth.changePhone') }}
     </button>
 
-    <div class="w-14 h-14 rounded-2xl bg-brand-light flex items-center justify-center mb-8">
-      <svg class="w-8 h-8 text-brand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-    </div>
+    <img src="/logo.png" alt="Maydon" class="mb-8 w-16 h-16" />
 
     <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ t('auth.otpTitle') }}</h1>
     <p class="text-gray-500 mb-10 text-[15px]">{{ t('auth.otpSubtitle', { phone }) }}</p>
@@ -122,9 +120,10 @@ async function verify() {
   auth.login({
     id: nanoid(),
     phone: phone.value,
-    name: 'Sardor',
+    name: '',
     stadiumIds: [],
   })
-  router.push({ name: 'home' })
+  const isOnboarded = localStorage.getItem('sm_onboarded') === 'true'
+  router.push({ name: isOnboarded ? 'home' : 'onboarding' })
 }
 </script>

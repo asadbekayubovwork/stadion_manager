@@ -1,164 +1,296 @@
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 z-50 flex items-end" @click.self="$emit('close')">
-      <div class="w-full max-w-[480px] mx-auto bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[92dvh]">
-        <!-- Handle + header -->
-        <div class="flex-shrink-0 px-5 pt-4 pb-3 border-b border-gray-100">
-          <div class="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-4" />
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-bold text-gray-900">{{ isEdit ? t('booking.edit') : t('booking.new') }}</h2>
-            <button @click="$emit('close')" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-              <svg class="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+    <Transition name="sheet" appear>
+      <div
+        v-if="show"
+        class="fixed inset-0 z-50 flex items-end"
+        style="background:rgba(15,23,42,0.4); font-family:'Inter', sans-serif;"
+        @click.self="$emit('close')"
+      >
+        <div
+          class="sheet-content w-full mx-auto flex flex-col"
+          style="max-width:480px; background:#f8fafc; border-radius:24px 24px 0 0;
+                 box-shadow:0 -8px 32px rgba(0,0,0,0.2); max-height:94dvh;"
+        >
+        <!-- ── HEADER ── -->
+        <div
+          style="background:#ffffff; border-bottom:1px solid #e2e8f0;
+                 padding:12px 16px; display:flex; align-items:center; gap:12px;
+                 border-radius:24px 24px 0 0; flex-shrink:0;"
+        >
+          <button
+            @click="$emit('close')"
+            style="width:36px; height:36px; border-radius:10px; background:#f1f5f9;
+                   display:flex; align-items:center; justify-content:center;
+                   border:none; cursor:pointer;"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#475569"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </button>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:17px; font-weight:900; color:#0f172a;">
+              {{ isEdit ? 'Bronni tahrirlash' : 'Yangi bron' }}
+            </div>
+            <div style="font-size:12px; color:#475569; font-weight:500;
+                        overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              {{ fieldName }} · {{ dateLabel }}
+            </div>
+          </div>
+          <button
+            @click="$emit('close')"
+            style="background:none; border:none; cursor:pointer; padding:0;
+                   font-size:13px; color:#94a3b8; font-weight:600;"
+          >
+            Bekor
+          </button>
+        </div>
+
+        <!-- ── BODY ── -->
+        <div style="flex:1; overflow-y:auto; padding:16px;">
+
+          <!-- Time slot info card -->
+          <div
+            style="background:linear-gradient(135deg,#16a34a 0%, #0d8c3a 100%);
+                   border-radius:16px; padding:14px 16px; margin-bottom:20px;
+                   display:flex; justify-content:space-between; align-items:center;
+                   box-shadow:0 4px 16px rgba(22,163,74,0.25);"
+          >
+            <div>
+              <div style="font-size:11px; color:rgba(255,255,255,0.75); font-weight:600;
+                          text-transform:uppercase; letter-spacing:0.5px;">
+                Tanlangan vaqt
+              </div>
+              <div style="font-size:28px; font-weight:900; color:#ffffff;
+                          font-family:'Inter', sans-serif; margin-top:2px;">
+                {{ form.startTime }}–{{ endTime }}
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:11px; color:rgba(255,255,255,0.75); font-weight:600;">
+                Davomiyligi
+              </div>
+              <div style="font-size:22px; font-weight:900; color:#ffffff;">
+                {{ durationLabel }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <div style="display:flex; flex-direction:column; gap:12px;">
+
+            <!-- Field selector (only if more than 1) -->
+            <div v-if="fields.length > 1">
+              <div :class="'lbl'">Maydon</div>
+              <div style="display:flex; gap:8px;">
+                <button
+                  v-for="f in fields"
+                  :key="f.id"
+                  @click="form.fieldId = f.id; autoPrice()"
+                  :style="form.fieldId === f.id
+                    ? 'flex:1; height:44px; border-radius:10px; background:#16a34a; border:none; cursor:pointer; font-size:13px; font-weight:800; color:#ffffff;'
+                    : 'flex:1; height:44px; border-radius:10px; background:#f1f5f9; border:none; cursor:pointer; font-size:13px; font-weight:700; color:#475569;'"
+                >{{ f.name }}</button>
+              </div>
+            </div>
+
+            <!-- Client name -->
+            <div>
+              <div :class="'lbl'">Mijoz</div>
+              <div :style="inputBox(form.clientName)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     :stroke="form.clientName ? '#16a34a' : '#94a3b8'"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <input
+                  v-model="form.clientName"
+                  type="text"
+                  placeholder="Mijoz ismi"
+                  style="flex:1; outline:none; border:none; background:transparent;
+                         font-size:16px; font-weight:700; color:#0f172a; min-width:0;"
+                />
+              </div>
+            </div>
+
+            <!-- Phone -->
+            <div>
+              <div :class="'lbl'">Telefon</div>
+              <div :style="inputBox(false)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.16 1.18 2 2 0 012.13 0H5.1a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                </svg>
+                <span style="font-size:14px; color:#0f172a; font-weight:600;
+                             font-family:'Inter', sans-serif; flex-shrink:0;">+998</span>
+                <input
+                  v-model="form.clientPhone"
+                  type="tel"
+                  inputmode="numeric"
+                  placeholder="90 123 45 67"
+                  style="flex:1; outline:none; border:none; background:transparent;
+                         font-size:14px; font-weight:600; color:#0f172a;
+                         font-family:'Inter', sans-serif; min-width:0;"
+                />
+              </div>
+            </div>
+
+            <!-- Date -->
+            <div>
+              <div :class="'lbl'">Sana</div>
+              <div :style="inputBox(false)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <input
+                  v-model="form.date"
+                  type="date"
+                  style="flex:1; outline:none; border:none; background:transparent;
+                         font-size:14px; font-weight:700; color:#0f172a;
+                         font-family:'Inter', sans-serif; min-width:0;"
+                />
+              </div>
+            </div>
+
+            <!-- Time row -->
+            <div style="display:flex; gap:10px;">
+              <div style="flex:1;">
+                <div :class="'lbl'">Boshlanish</div>
+                <div :style="inputBox(false, true)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <input
+                    v-model="form.startTime"
+                    type="time"
+                    style="flex:1; outline:none; border:none; background:transparent;
+                           font-size:16px; font-weight:800; color:#0f172a;
+                           font-family:'Inter', sans-serif; min-width:0; text-align:center;"
+                  />
+                </div>
+              </div>
+              <div style="flex:1;">
+                <div :class="'lbl'">Tugash</div>
+                <div :style="inputBox(false, true)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                  <span style="font-size:16px; font-weight:800; color:#0f172a;
+                               font-family:'Inter', sans-serif;">{{ endTime }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Duration chips -->
+            <div>
+              <div :class="'lbl'">Davomiyligi</div>
+              <div style="display:flex; gap:8px;">
+                <button
+                  v-for="d in durations"
+                  :key="d.value"
+                  @click="selectDuration(d.value)"
+                  :style="form.durationMin === d.value
+                    ? 'flex:1; height:44px; border-radius:10px; background:#16a34a; border:none; cursor:pointer; font-size:13px; font-weight:800; color:#ffffff;'
+                    : 'flex:1; height:44px; border-radius:10px; background:#f1f5f9; border:none; cursor:pointer; font-size:13px; font-weight:700; color:#475569;'"
+                >{{ d.label }}</button>
+              </div>
+            </div>
+
+            <!-- Price -->
+            <div>
+              <div :class="'lbl'">Narx</div>
+              <div :style="inputBox(false)">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="1" x2="12" y2="23"/>
+                  <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                </svg>
+                <input
+                  v-model.number="form.price"
+                  type="number"
+                  inputmode="numeric"
+                  style="flex:1; outline:none; border:none; background:transparent;
+                         font-size:18px; font-weight:900; color:#0f172a;
+                         font-family:'Inter', sans-serif; min-width:0;"
+                />
+                <span style="font-size:13px; color:#94a3b8; font-weight:600; flex-shrink:0;">so'm</span>
+              </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+              <div :class="'lbl'">Izoh (ixtiyoriy)</div>
+              <textarea
+                v-model="form.notes"
+                rows="2"
+                placeholder="Izoh yozing..."
+                style="width:100%; background:#ffffff; border-radius:12px;
+                       border:1.5px solid #e2e8f0; padding:12px 14px;
+                       outline:none; resize:none; font-family:'Inter', sans-serif;
+                       font-size:14px; font-weight:500; color:#0f172a;"
+              />
+            </div>
+
+            <!-- Conflict warning -->
+            <div
+              v-if="conflict"
+              style="display:flex; align-items:center; gap:8px;
+                     background:#fee2e2; border-radius:12px; padding:12px 14px;
+                     color:#dc2626;"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span style="font-size:13px; font-weight:700;">Bu vaqt band!</span>
+            </div>
           </div>
         </div>
 
-        <!-- Form -->
-        <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          <!-- Client name -->
-          <div>
-            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">{{ t('booking.clientName') }}</label>
-            <input
-              v-model="form.clientName"
-              type="text"
-              class="w-full border-2 rounded-xl px-4 py-3 text-sm font-medium outline-none transition-colors"
-              :class="form.clientName ? 'border-brand' : 'border-gray-200'"
-              :placeholder="t('booking.clientName')"
-            />
-          </div>
-
-          <!-- Client phone -->
-          <div>
-            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">{{ t('booking.clientPhone') }}</label>
-            <div class="flex items-center border-2 rounded-xl px-4 py-3 gap-2 transition-colors"
-              :class="form.clientPhone ? 'border-brand' : 'border-gray-200'">
-              <span class="text-base">🇺🇿</span>
-              <span class="text-sm font-semibold text-gray-600">+998</span>
-              <input
-                v-model="form.clientPhone"
-                type="tel"
-                inputmode="numeric"
-                maxlength="12"
-                class="flex-1 outline-none text-sm font-medium text-gray-900 bg-transparent placeholder-gray-400"
-                placeholder="99 123 45 67"
-              />
-            </div>
-          </div>
-
-          <!-- Field + Date row -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">{{ t('booking.field') }}</label>
-              <select
-                v-model="form.fieldId"
-                class="w-full border-2 border-gray-200 rounded-xl px-3 py-3 text-sm font-medium outline-none bg-white"
-                @change="onFieldChange"
-              >
-                <option v-for="f in fields" :key="f.id" :value="f.id">{{ f.name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">{{ t('booking.date') }}</label>
-              <input
-                v-model="form.date"
-                type="date"
-                class="w-full border-2 border-gray-200 rounded-xl px-3 py-3 text-sm font-medium outline-none"
-              />
-            </div>
-          </div>
-
-          <!-- Start time -->
-          <div>
-            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">{{ t('booking.startTime') }}</label>
-            <div class="grid grid-cols-4 gap-2">
-              <button
-                v-for="slot in timeSlots"
-                :key="slot"
-                @click="form.startTime = slot"
-                class="py-2.5 rounded-xl text-sm font-semibold border-2 transition-all"
-                :class="form.startTime === slot ? 'bg-brand text-white border-brand' : 'border-gray-200 text-gray-600'"
-              >
-                {{ slot }}
-              </button>
-            </div>
-            <input
-              v-model="form.startTime"
-              type="time"
-              class="mt-2 w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium outline-none"
-            />
-          </div>
-
-          <!-- Duration chips -->
-          <div>
-            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">{{ t('booking.duration') }}</label>
-            <div class="flex gap-2 flex-wrap">
-              <button
-                v-for="d in durations"
-                :key="d.value"
-                @click="selectDuration(d.value)"
-                class="flex-1 min-w-[4rem] py-2.5 rounded-xl text-sm font-semibold border-2 transition-all"
-                :class="form.durationMin === d.value ? 'bg-brand text-white border-brand' : 'border-gray-200 text-gray-600'"
-              >
-                {{ d.label }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Price -->
-          <div>
-            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
-              {{ t('booking.price') }}
-              <span class="text-brand normal-case font-normal ml-1">{{ t('booking.priceAuto') }}</span>
-            </label>
-            <div class="flex items-center border-2 rounded-xl px-4 py-3 gap-2 border-gray-200">
-              <input
-                v-model.number="form.price"
-                type="number"
-                inputmode="numeric"
-                class="flex-1 outline-none text-sm font-bold text-gray-900 bg-transparent"
-                placeholder="0"
-              />
-              <span class="text-sm text-gray-400 font-medium">so'm</span>
-            </div>
-          </div>
-
-          <!-- Notes -->
-          <div>
-            <label class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">{{ t('booking.notes') }}</label>
-            <textarea
-              v-model="form.notes"
-              rows="2"
-              class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm font-medium outline-none resize-none"
-              :placeholder="t('booking.notes')"
-            />
-          </div>
-
-          <!-- Conflict warning -->
-          <div v-if="conflict" class="flex items-center gap-2 bg-red-50 text-red-600 rounded-xl px-4 py-3">
-            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span class="text-sm font-semibold">{{ t('schedule.conflict') }}</span>
-          </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="flex-shrink-0 px-5 pb-6 pt-3 border-t border-gray-100">
+        <!-- ── FOOTER ── -->
+        <div
+          style="background:#ffffff; border-top:1px solid #e2e8f0; padding:12px 16px;
+                 padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); flex-shrink:0;"
+        >
           <button
             @click="save"
             :disabled="!canSave || conflict"
-            class="w-full py-4 rounded-2xl font-bold text-white text-base transition-all"
-            :class="canSave && !conflict ? 'bg-brand shadow-lg shadow-brand/30 active:scale-95' : 'bg-gray-200 text-gray-400'"
+            :style="canSave && !conflict
+              ? 'width:100%; height:56px; border-radius:14px; background:#16a34a; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 16px rgba(22,163,74,0.33);'
+              : 'width:100%; height:56px; border-radius:14px; background:#e2e8f0; border:none; cursor:not-allowed; display:flex; align-items:center; justify-content:center; gap:8px;'"
           >
-            {{ t('common.save') }}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 :stroke="canSave && !conflict ? '#ffffff' : '#94a3b8'"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span :style="canSave && !conflict
+              ? 'font-size:17px; font-weight:900; color:#ffffff;'
+              : 'font-size:17px; font-weight:900; color:#94a3b8;'">
+              Bronni saqlash
+            </span>
           </button>
         </div>
       </div>
     </div>
+    </Transition>
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useStadiumsStore } from '../../stores/stadiums'
 import { useBookingsStore } from '../../stores/bookings'
 import { useClientsStore } from '../../stores/clients'
@@ -166,6 +298,7 @@ import type { Booking } from '../../types'
 import dayjs from 'dayjs'
 
 const props = defineProps<{
+  show: boolean
   booking?: Booking | null
   defaultDate?: string
   defaultTime?: string
@@ -173,7 +306,6 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ close: []; saved: [] }>()
 
-const { t } = useI18n()
 const stadiumsStore = useStadiumsStore()
 const bookingsStore = useBookingsStore()
 const clientsStore = useClientsStore()
@@ -182,23 +314,11 @@ const isEdit = computed(() => !!props.booking)
 const fields = computed(() => stadiumsStore.activeStadium?.fields ?? [])
 
 const durations = [
-  { value: 30, label: '30m' },
-  { value: 60, label: '1h' },
-  { value: 90, label: '1.5h' },
-  { value: 120, label: '2h' },
+  { value: 30, label: '30 daq' },
+  { value: 60, label: '1 soat' },
+  { value: 90, label: '1.5 soat' },
+  { value: 120, label: '2 soat' },
 ]
-
-// Time slots for quick pick (every 30 min from work start to work end)
-const timeSlots = computed(() => {
-  const slots: string[] = []
-  const ws = stadiumsStore.activeStadium?.workStart ?? 6
-  const we = stadiumsStore.activeStadium?.workEnd ?? 24
-  for (let h = ws; h < we; h++) {
-    slots.push(`${String(h).padStart(2, '0')}:00`)
-    slots.push(`${String(h).padStart(2, '0')}:30`)
-  }
-  return slots.slice(0, 8) // show just first 8 for space
-})
 
 interface Form {
   clientName: string
@@ -216,18 +336,18 @@ const form = ref<Form>({
   clientPhone: '',
   fieldId: props.fieldId ?? fields.value[0]?.id ?? '',
   date: props.defaultDate ?? dayjs().format('YYYY-MM-DD'),
-  startTime: props.defaultTime ?? `${String((stadiumsStore.activeStadium?.workStart ?? 6) + 12).padStart(2, '0')}:00`,
+  startTime: props.defaultTime || `${String((stadiumsStore.activeStadium?.workStart ?? 6) + 12).padStart(2, '0')}:00`,
   durationMin: 60,
   price: 0,
   notes: '',
 })
 
-onMounted(() => {
+function resetForm() {
   if (props.booking) {
     const b = props.booking
     form.value = {
       clientName: b.clientName,
-      clientPhone: b.clientPhone,
+      clientPhone: b.clientPhone.replace(/^\+998\s*/, ''),
       fieldId: b.fieldId,
       date: b.date,
       startTime: b.startTime,
@@ -235,9 +355,23 @@ onMounted(() => {
       price: b.price,
       notes: b.notes ?? '',
     }
+  } else {
+    form.value = {
+      clientName: '',
+      clientPhone: '',
+      fieldId: props.fieldId ?? fields.value[0]?.id ?? '',
+      date: props.defaultDate ?? dayjs().format('YYYY-MM-DD'),
+      startTime: props.defaultTime || `${String((stadiumsStore.activeStadium?.workStart ?? 6) + 12).padStart(2, '0')}:00`,
+      durationMin: 60,
+      price: 0,
+      notes: '',
+    }
   }
   autoPrice()
-})
+}
+
+onMounted(resetForm)
+watch(() => props.show, (open) => { if (open) resetForm() })
 
 function addMinutes(time: string, mins: number) {
   const [h, m] = time.split(':').map(Number)
@@ -246,6 +380,23 @@ function addMinutes(time: string, mins: number) {
 }
 
 const endTime = computed(() => addMinutes(form.value.startTime, form.value.durationMin))
+
+const fieldName = computed(() =>
+  fields.value.find(f => f.id === form.value.fieldId)?.name ?? '—'
+)
+
+const MONTHS_UZ_SHORT = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek']
+const dateLabel = computed(() => {
+  const d = dayjs(form.value.date)
+  return `${d.date()} ${MONTHS_UZ_SHORT[d.month()]}`
+})
+
+const durationLabel = computed(() => {
+  const m = form.value.durationMin
+  if (m < 60) return `${m} daq`
+  const h = m / 60
+  return Number.isInteger(h) ? `${h} soat` : `${h} soat`
+})
 
 const conflict = computed(() => {
   if (!form.value.fieldId || !form.value.date || !form.value.startTime) return false
@@ -259,14 +410,14 @@ const conflict = computed(() => {
 })
 
 const canSave = computed(() =>
-  !!form.value.clientName && !!form.value.fieldId && !!form.value.date && !!form.value.startTime
+  !!form.value.clientName.trim() && !!form.value.fieldId && !!form.value.date && !!form.value.startTime
 )
 
-function onFieldChange() { autoPrice() }
 function selectDuration(mins: number) {
   form.value.durationMin = mins
   autoPrice()
 }
+
 function autoPrice() {
   const field = fields.value.find(f => f.id === form.value.fieldId)
   if (field) {
@@ -276,16 +427,27 @@ function autoPrice() {
 
 watch(() => [form.value.fieldId, form.value.durationMin], autoPrice)
 
+function inputBox(active: any, center = false) {
+  const isActive = !!active
+  return `background:#ffffff; border-radius:12px;
+          border:1.5px solid ${isActive ? '#16a34a' : '#e2e8f0'};
+          padding:0 14px; height:52px; display:flex; align-items:center; gap:10px;
+          ${center ? 'justify-content:center;' : ''}`
+}
+
 function save() {
   if (!canSave.value || conflict.value) return
-  const client = clientsStore.upsert(form.value.clientName, form.value.clientPhone || 'unknown')
+  const phone = form.value.clientPhone.trim()
+    ? '+998' + form.value.clientPhone.replace(/\s+/g, '')
+    : 'unknown'
+  const client = clientsStore.upsert(form.value.clientName.trim(), phone)
   const stadiumId = stadiumsStore.activeStadiumId
 
   if (isEdit.value && props.booking) {
     bookingsStore.updateBooking(props.booking.id, {
       clientId: client.id,
-      clientName: form.value.clientName,
-      clientPhone: form.value.clientPhone,
+      clientName: form.value.clientName.trim(),
+      clientPhone: phone,
       fieldId: form.value.fieldId,
       stadiumId,
       date: form.value.date,
@@ -298,8 +460,8 @@ function save() {
   } else {
     bookingsStore.addBooking({
       clientId: client.id,
-      clientName: form.value.clientName,
-      clientPhone: form.value.clientPhone,
+      clientName: form.value.clientName.trim(),
+      clientPhone: phone,
       fieldId: form.value.fieldId,
       stadiumId,
       date: form.value.date,
@@ -315,3 +477,14 @@ function save() {
   emit('saved')
 }
 </script>
+
+<style scoped>
+.lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+</style>

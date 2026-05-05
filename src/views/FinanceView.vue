@@ -1,79 +1,175 @@
 <template>
-  <div class="px-4 pt-5 pb-4">
-    <!-- Header -->
-    <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ t('finance.title') }}</h1>
+  <div class="flex flex-col" style="background:#f8fafc; min-height:100%; font-family:'Inter',sans-serif;">
 
-    <!-- Period tabs -->
-    <div class="flex bg-gray-100 rounded-2xl p-1 mb-5">
-      <button
-        v-for="p in periods"
-        :key="p.key"
-        @click="activePeriod = p.key"
-        class="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
-        :class="activePeriod === p.key ? 'bg-white text-brand shadow-sm' : 'text-gray-500'"
+    <!-- ── HEADER ── -->
+    <div
+      style="background:#ffffff; border-bottom:1px solid #e2e8f0; padding:14px 16px;
+             display:flex; align-items:center; justify-content:space-between;"
+    >
+      <div style="font-size:22px; font-weight:900; color:#0f172a;">Moliya</div>
+      <div
+        style="background:#f1f5f9; border-radius:10px; padding:4px;
+               display:flex; gap:2px;"
       >
-        {{ t('finance.' + p.key) }}
-      </button>
-    </div>
-
-    <!-- Revenue cards -->
-    <div class="grid grid-cols-1 gap-3 mb-5">
-      <div class="bg-brand rounded-2xl p-5 shadow-lg shadow-brand/20">
-        <p class="text-green-100 text-xs font-semibold uppercase tracking-wide mb-1">{{ t('finance.revenue') }}</p>
-        <p class="text-3xl font-bold text-white">{{ formatMoney(stats.total) }} <span class="text-base font-normal text-green-100">so'm</span></p>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <div class="flex items-center gap-2 mb-1">
-            <div class="w-2 h-2 rounded-full bg-green-500" />
-            <p class="text-xs text-gray-500 font-semibold">{{ t('finance.cash') }}</p>
-          </div>
-          <p class="text-lg font-bold text-gray-900">{{ formatMoney(stats.cash) }}</p>
-        </div>
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-          <div class="flex items-center gap-2 mb-1">
-            <div class="w-2 h-2 rounded-full bg-blue-500" />
-            <p class="text-xs text-gray-500 font-semibold">{{ t('finance.card') }}</p>
-          </div>
-          <p class="text-lg font-bold text-gray-900">{{ formatMoney(stats.card) }}</p>
-        </div>
+        <button
+          v-for="p in periods"
+          :key="p.key"
+          @click="activePeriod = p.key"
+          :style="activePeriod === p.key
+            ? 'padding:6px 14px; border-radius:8px; background:#16a34a; color:#ffffff; font-size:12px; font-weight:800; border:none; cursor:pointer; box-shadow:0 2px 6px rgba(22,163,74,0.3);'
+            : 'padding:6px 14px; border-radius:8px; background:transparent; color:#475569; font-size:12px; font-weight:700; border:none; cursor:pointer;'"
+        >{{ p.label }}</button>
       </div>
     </div>
 
-    <!-- Unpaid section -->
-    <div>
-      <div class="flex items-center gap-2 mb-3">
-        <div class="w-2 h-2 rounded-full bg-orange-500" />
-        <h2 class="font-bold text-gray-900 text-base">{{ t('finance.unpaidList') }}</h2>
-        <span class="text-xs text-orange-500 font-semibold bg-orange-50 px-2 py-0.5 rounded-full">{{ unpaid.length }}</span>
+    <div style="padding:16px;">
+
+      <!-- Total revenue card -->
+      <div
+        style="background:linear-gradient(135deg,#16a34a 0%, #0d8c3a 100%);
+               border-radius:18px; padding:18px;
+               box-shadow:0 6px 20px rgba(22,163,74,0.3); margin-bottom:14px;"
+      >
+        <div style="font-size:11px; color:rgba(255,255,255,0.8); font-weight:700;
+                    text-transform:uppercase; letter-spacing:0.5px;">
+          {{ totalLabel }}
+        </div>
+        <div style="font-size:30px; font-weight:900; color:#ffffff;
+                    font-family:'Inter', sans-serif; margin-top:4px; letter-spacing:-0.5px;">
+          {{ formatMoney(stats.total) }}
+        </div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.7); font-weight:600;">so'm</div>
+        <div v-if="totalLabel !== 'Bugungi jami'"
+             style="display:flex; align-items:center; gap:4px; margin-top:8px;">
+          <svg v-if="deltaPct >= 0" width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="19" x2="12" y2="5"/>
+            <polyline points="5 12 12 5 19 12"/>
+          </svg>
+          <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <polyline points="19 12 12 19 5 12"/>
+          </svg>
+          <span style="font-size:12px; color:rgba(255,255,255,0.9); font-weight:700;">
+            {{ deltaPct >= 0 ? '+' : '' }}{{ deltaPct }}% {{ deltaLabel }}
+          </span>
+        </div>
       </div>
 
-      <div v-if="unpaid.length === 0" class="text-center py-10 text-gray-400 text-sm">{{ t('finance.noUnpaid') }}</div>
+      <!-- Bar chart -->
+      <div
+        style="background:#ffffff; border-radius:16px; padding:16px;
+               box-shadow:0 2px 8px rgba(15,23,42,0.08); margin-bottom:14px;"
+      >
+        <div style="font-size:13px; font-weight:800; color:#0f172a; margin-bottom:14px;">
+          Kunlik daromad
+        </div>
+        <div style="display:flex; align-items:flex-end; gap:8px; height:90px;">
+          <div
+            v-for="bar in chart"
+            :key="bar.label"
+            style="flex:1; display:flex; align-items:flex-end; height:100%;"
+          >
+            <div
+              :style="{
+                width: '100%',
+                height: bar.h + '%',
+                minHeight: '4px',
+                background: bar.active ? '#16a34a' : '#bbf7d0',
+                borderRadius: '6px 6px 0 0',
+                transition: 'height 0.3s ease',
+              }"
+            />
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <div
+            v-for="bar in chart"
+            :key="bar.label + '-l'"
+            style="flex:1; text-align:center; font-size:11px; font-weight:600; color:#94a3b8;"
+          >
+            {{ bar.label }}
+          </div>
+        </div>
+      </div>
 
-      <div class="flex flex-col gap-2">
+      <!-- Cash / Card cards -->
+      <div style="display:flex; gap:10px; margin-bottom:14px;">
         <div
-          v-for="b in unpaid"
-          :key="b.id"
-          class="bg-white rounded-2xl p-4 shadow-sm border border-orange-100 flex items-center gap-3"
+          style="flex:1; background:#ffffff; border-radius:14px; padding:14px;
+                 box-shadow:0 2px 8px rgba(15,23,42,0.08); border-top:3px solid #16a34a;"
         >
-          <div class="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          <div style="font-size:11px; color:#16a34a; font-weight:700;
+                      text-transform:uppercase; letter-spacing:0.5px;">Naqd</div>
+          <div style="font-size:18px; font-weight:900; color:#0f172a; margin-top:4px;
+                      font-family:'Inter', sans-serif;">
+            {{ formatMoney(stats.cash) }}
           </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-semibold text-sm text-gray-900">{{ b.clientName }}</p>
-            <p class="text-xs text-gray-500 mt-0.5">{{ b.date }} · {{ b.startTime }}–{{ b.endTime }}</p>
+          <div style="font-size:11px; color:#16a34a; font-weight:700; margin-top:2px;">
+            {{ cashPct }}%
           </div>
-          <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
-            <p class="text-sm font-bold text-gray-900">{{ formatMoney(b.price) }}</p>
-            <div class="flex gap-1">
-              <button
-                @click="pay(b.id, 'cash')"
-                class="text-[10px] font-bold px-2 py-1 bg-brand-light text-brand rounded-lg"
-              >{{ t('booking.cash') }}</button>
-              <button
-                @click="pay(b.id, 'card')"
-                class="text-[10px] font-bold px-2 py-1 bg-blue-50 text-blue-600 rounded-lg"
-              >{{ t('booking.card') }}</button>
+        </div>
+        <div
+          style="flex:1; background:#ffffff; border-radius:14px; padding:14px;
+                 box-shadow:0 2px 8px rgba(15,23,42,0.08); border-top:3px solid #3b82f6;"
+        >
+          <div style="font-size:11px; color:#3b82f6; font-weight:700;
+                      text-transform:uppercase; letter-spacing:0.5px;">Karta</div>
+          <div style="font-size:18px; font-weight:900; color:#0f172a; margin-top:4px;
+                      font-family:'Inter', sans-serif;">
+            {{ formatMoney(stats.card) }}
+          </div>
+          <div style="font-size:11px; color:#3b82f6; font-weight:700; margin-top:2px;">
+            {{ cardPct }}%
+          </div>
+        </div>
+      </div>
+
+      <!-- Unpaid section -->
+      <div
+        style="background:#ffffff; border-radius:14px; overflow:hidden;
+               box-shadow:0 2px 8px rgba(15,23,42,0.08);"
+      >
+        <div
+          style="display:flex; align-items:center; justify-content:space-between;
+                 padding:12px 14px; border-bottom:1px solid #f1f5f9;"
+        >
+          <div style="font-size:14px; font-weight:800; color:#0f172a;">To'lanmagan bronlar</div>
+          <div
+            style="background:#fff7ed; padding:2px 10px; border-radius:8px;
+                   font-size:11px; font-weight:700; color:#9a3412;"
+          >
+            {{ unpaid.length }} ta · {{ formatMoney(unpaidTotal) }} so'm
+          </div>
+        </div>
+
+        <div v-if="unpaid.length === 0"
+             style="padding:24px; text-align:center; color:#94a3b8; font-size:13px;">
+          To'lanmagan bron yo'q
+        </div>
+
+        <div v-else>
+          <div
+            v-for="(b, i) in unpaid"
+            :key="b.id"
+            @click="router.push({ name: 'booking-detail', params: { id: b.id } })"
+            style="display:flex; align-items:center; padding:12px 14px; cursor:pointer;"
+            :style="i < unpaid.length - 1 ? 'border-bottom:1px solid #f1f5f9;' : ''"
+          >
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:14px; font-weight:800; color:#0f172a;
+                          overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                {{ b.clientName }}
+              </div>
+              <div style="font-size:12px; color:#475569; font-weight:500; margin-top:2px;
+                          font-family:'Inter', sans-serif;">
+                {{ b.startTime }}–{{ b.endTime }}
+              </div>
+            </div>
+            <div style="font-size:14px; font-weight:800; color:#f97316;
+                        font-family:'Inter', sans-serif; flex-shrink:0; margin-left:12px;">
+              {{ formatMoney(b.price) }} so'm
             </div>
           </div>
         </div>
@@ -84,21 +180,22 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useBookingsStore } from '../stores/bookings'
 import { useStadiumsStore } from '../stores/stadiums'
 import dayjs from 'dayjs'
 
-const { t } = useI18n()
+const router = useRouter()
 const bookingsStore = useBookingsStore()
 const stadiumsStore = useStadiumsStore()
 
 const periods = [
-  { key: 'today' },
-  { key: 'week' },
-  { key: 'month' },
-]
-const activePeriod = ref('today')
+  { key: 'today', label: 'Kun' },
+  { key: 'week', label: 'Hafta' },
+  { key: 'month', label: 'Oy' },
+] as const
+
+const activePeriod = ref<'today' | 'week' | 'month'>('week')
 
 const stadiumId = computed(() => stadiumsStore.activeStadiumId)
 
@@ -118,12 +215,111 @@ const stats = computed(() =>
   bookingsStore.revenueByPeriod(stadiumId.value, dateRange.value.start, dateRange.value.end)
 )
 
-const unpaid = computed(() =>
-  bookingsStore.unpaidBookings.filter(b => b.stadiumId === stadiumId.value)
+const prevRange = computed(() => {
+  const today = dayjs()
+  if (activePeriod.value === 'today') {
+    const d = today.subtract(1, 'day').format('YYYY-MM-DD')
+    return { start: d, end: d }
+  }
+  if (activePeriod.value === 'week') {
+    const prev = today.subtract(1, 'week')
+    return { start: prev.startOf('week').format('YYYY-MM-DD'), end: prev.endOf('week').format('YYYY-MM-DD') }
+  }
+  const prev = today.subtract(1, 'month')
+  return { start: prev.startOf('month').format('YYYY-MM-DD'), end: prev.endOf('month').format('YYYY-MM-DD') }
+})
+
+const prevStats = computed(() =>
+  bookingsStore.revenueByPeriod(stadiumId.value, prevRange.value.start, prevRange.value.end)
 )
 
-function pay(id: string, method: 'cash' | 'card') {
-  bookingsStore.markPaid(id, method)
+const deltaPct = computed(() => {
+  const p = prevStats.value.total
+  if (!p) return stats.value.total > 0 ? 100 : 0
+  return Math.round(((stats.value.total - p) / p) * 100)
+})
+
+const totalLabel = computed(() =>
+  activePeriod.value === 'today' ? 'Bugungi jami'
+    : activePeriod.value === 'week' ? "Bu hafta jami"
+    : 'Bu oy jami'
+)
+
+const deltaLabel = computed(() =>
+  activePeriod.value === 'week' ? "o'tgan haftadan"
+    : activePeriod.value === 'month' ? "o'tgan oydan"
+    : ''
+)
+
+const cashPct = computed(() => {
+  const t = stats.value.total
+  if (!t) return 0
+  return Math.round((stats.value.cash / t) * 100)
+})
+const cardPct = computed(() => 100 - cashPct.value)
+
+const WEEKDAYS_LABEL = ['Ya', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh']
+
+const chart = computed(() => {
+  const today = dayjs()
+  if (activePeriod.value === 'today') {
+    const buckets: { label: string; value: number }[] = []
+    for (let h = 6; h < 24; h += 3) {
+      buckets.push({ label: `${h}h`, value: 0 })
+    }
+    const dayStr = today.format('YYYY-MM-DD')
+    bookingsStore.bookings
+      .filter(b => b.stadiumId === stadiumId.value && b.date === dayStr
+        && b.paymentStatus === 'paid' && b.status === 'active')
+      .forEach(b => {
+        const h = parseInt(b.startTime.split(':')[0])
+        const idx = Math.min(buckets.length - 1, Math.max(0, Math.floor((h - 6) / 3)))
+        buckets[idx].value += b.price
+      })
+    return buildChart(buckets, -1)
+  }
+  if (activePeriod.value === 'week') {
+    const start = today.startOf('week')
+    const buckets = WEEKDAYS_LABEL.map((label, i) => ({
+      label,
+      value: 0,
+      date: start.add(i, 'day').format('YYYY-MM-DD'),
+    }))
+    bookingsStore.bookings
+      .filter(b => b.stadiumId === stadiumId.value && b.paymentStatus === 'paid' && b.status === 'active')
+      .forEach(b => {
+        const bucket = buckets.find(x => x.date === b.date)
+        if (bucket) bucket.value += b.price
+      })
+    return buildChart(buckets, today.day())
+  }
+  // month
+  const daysInMonth = today.daysInMonth()
+  const buckets: { label: string; value: number }[] = []
+  for (let d = 1; d <= daysInMonth; d += Math.ceil(daysInMonth / 7)) {
+    buckets.push({ label: String(d), value: 0 })
+  }
+  return buildChart(buckets, -1)
+})
+
+function buildChart(buckets: { label: string; value: number }[], activeIdx: number) {
+  const max = Math.max(1, ...buckets.map(b => b.value))
+  return buckets.map((b, i) => ({
+    label: b.label,
+    h: Math.round((b.value / max) * 100),
+    active: i === activeIdx,
+  }))
 }
-function formatMoney(n: number) { return n.toLocaleString('uz-UZ') }
+
+const unpaid = computed(() =>
+  bookingsStore.unpaidBookings
+    .filter(b => b.stadiumId === stadiumId.value)
+    .slice(0, 6)
+)
+
+const unpaidTotal = computed(() =>
+  unpaid.value.reduce((sum, b) => sum + b.price, 0)
+)
+
+function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') }
 </script>

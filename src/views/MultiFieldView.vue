@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStadiumsStore } from '../stores/stadiums'
 import { useBookingsStore } from '../stores/bookings'
@@ -207,28 +207,37 @@ function timeToMinutes(hhmm: string) {
   return h * 60 + m
 }
 
-function fieldColor(fieldId: string) {
+function fieldColor(fieldId: number) {
   const idx = fields.value.findIndex(f => f.id === fieldId)
   const f = fields.value[idx]
   return f?.color || FIELD_COLORS[idx % FIELD_COLORS.length] || '#16a34a'
 }
 
-function nextLabel(fieldId: string) {
+function nextLabel(fieldId: number) {
   const now = dayjs().isSame(selectedDate.value, 'day') ? dayjs().format('HH:mm') : '00:00'
   const upcoming = bookingsStore
     .getForFieldAndDate(fieldId, selectedDate.value)
     .filter(b => b.endTime > now)
     .sort((a, b) => a.startTime.localeCompare(b.startTime))[0]
   if (!upcoming) return "Bo'sh"
-  return `${upcoming.clientName.split(' ')[0]} — ${upcoming.startTime}`
+  return `${(upcoming.customerName || '—').split(' ')[0]} — ${upcoming.startTime}`
 }
 
 function shiftDate(delta: number) {
   selectedDate.value = dayjs(selectedDate.value).add(delta, 'day').format('YYYY-MM-DD')
 }
 
-function goToField(fieldId: string) {
+function goToField(fieldId: number) {
   stadiumsStore.setActiveField(fieldId)
   router.push({ name: 'schedule' })
 }
+
+onMounted(async () => {
+  if (!stadiumsStore.loaded) await stadiumsStore.loadAll()
+  await bookingsStore.loadByDate(selectedDate.value).catch(() => {})
+})
+
+watch(selectedDate, (d) => {
+  bookingsStore.loadByDate(d).catch(() => {})
+})
 </script>

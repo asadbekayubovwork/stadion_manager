@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useClientsStore } from '../stores/clients'
 import { useBookingsStore } from '../stores/bookings'
@@ -118,7 +118,7 @@ function colorFor(name: string) {
 }
 
 function getInitials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean)
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return '?'
   if (parts.length === 1) return parts[0].charAt(0).toUpperCase()
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase()
@@ -126,29 +126,30 @@ function getInitials(name: string) {
 
 function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') }
 
-const enrichedAll = computed(() =>
+const enriched = computed(() =>
   clientsStore.clients.map(c => {
-    const bookings = bookingsStore.getForClient(c.id)
-    const paid = bookings.filter(b => b.paymentStatus === 'paid' && b.status === 'active')
+    const fromCache = bookingsStore.getForClient(c.id)
+    const paidLocal = fromCache.filter(b => b.isPaid && b.status === 'active')
     return {
       id: c.id,
       name: c.name,
       phone: c.phone,
       initials: getInitials(c.name),
-      color: colorFor(c.name),
-      visits: bookings.filter(b => b.status === 'active').length,
-      totalSpent: paid.reduce((sum, b) => sum + b.price, 0),
+      color: colorFor(c.name || ''),
+      visits: c.bookingsCount ?? fromCache.filter(b => b.status === 'active').length,
+      totalSpent: c.totalSpent ?? paidLocal.reduce((sum, b) => sum + b.price, 0),
     }
-  }).sort((a, b) => b.totalSpent - a.totalSpent)
+  }).sort((a, b) => (b.totalSpent ?? 0) - (a.totalSpent ?? 0))
 )
 
-const enriched = computed(() => {
-  const q = query.value.trim().toLowerCase()
-  if (!q) return enrichedAll.value
-  return enrichedAll.value.filter(c =>
-    c.name.toLowerCase().includes(q) || c.phone.includes(q)
-  )
-})
+const totalClients = computed(() => clientsStore.clients.length)
 
-const totalClients = computed(() => enrichedAll.value.length)
+let searchTimer: number | undefined
+onMounted(() => clientsStore.load().catch(() => {}))
+watch(query, v => {
+  clearTimeout(searchTimer)
+  searchTimer = window.setTimeout(() => {
+    clientsStore.load(v.trim() || undefined).catch(() => {})
+  }, 300)
+})
 </script>

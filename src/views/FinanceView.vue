@@ -140,7 +140,7 @@
             style="background:#fff7ed; padding:2px 10px; border-radius:8px;
                    font-size:11px; font-weight:700; color:#9a3412;"
           >
-            {{ unpaid.length }} ta · {{ formatMoney(unpaidTotal) }} so'm
+            {{ unpaidCount }} ta · {{ formatMoney(unpaidTotal) }} so'm
           </div>
         </div>
 
@@ -160,7 +160,7 @@
             <div style="flex:1; min-width:0;">
               <div style="font-size:14px; font-weight:800; color:#0f172a;
                           overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                {{ b.clientName }}
+                {{ b.customerName }}
               </div>
               <div style="font-size:12px; color:#475569; font-weight:500; margin-top:2px;
                           font-family:'Inter', sans-serif;">
@@ -179,15 +179,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBookingsStore } from '../stores/bookings'
 import { useStadiumsStore } from '../stores/stadiums'
+import * as financeApi from '../api/finance'
+import { normalizeBooking } from '../utils/booking'
+import type { FinanceData } from '../types'
 import dayjs from 'dayjs'
 
 const router = useRouter()
 const bookingsStore = useBookingsStore()
 const stadiumsStore = useStadiumsStore()
+const finance = ref<FinanceData | null>(null)
+const loading = ref(false)
 
 const periods = [
   { key: 'today', label: 'Kun' },
@@ -211,9 +216,14 @@ const dateRange = computed(() => {
   return { start: today.startOf('month').format('YYYY-MM-DD'), end: today.endOf('month').format('YYYY-MM-DD') }
 })
 
-const stats = computed(() =>
+const localStats = computed(() =>
   bookingsStore.revenueByPeriod(stadiumId.value, dateRange.value.start, dateRange.value.end)
 )
+const stats = computed(() => ({
+  total: finance.value?.totalIncome ?? localStats.value.total,
+  cash: finance.value?.cashAmount ?? localStats.value.cash,
+  card: finance.value?.cardAmount ?? localStats.value.card,
+}))
 
 const prevRange = computed(() => {
   const today = dayjs()
@@ -234,6 +244,9 @@ const prevStats = computed(() =>
 )
 
 const deltaPct = computed(() => {
+  if (typeof finance.value?.changePercent === 'number') {
+    return Math.round(finance.value.changePercent)
+  }
   const p = prevStats.value.total
   if (!p) return stats.value.total > 0 ? 100 : 0
   return Math.round(((stats.value.total - p) / p) * 100)
@@ -252,25 +265,42 @@ const deltaLabel = computed(() =>
 )
 
 const cashPct = computed(() => {
+  if (typeof finance.value?.cashPercent === 'number') {
+    return Math.round(finance.value.cashPercent)
+  }
   const t = stats.value.total
   if (!t) return 0
   return Math.round((stats.value.cash / t) * 100)
 })
-const cardPct = computed(() => 100 - cashPct.value)
+const cardPct = computed(() => {
+  if (typeof finance.value?.cardPercent === 'number') {
+    return Math.round(finance.value.cardPercent)
+  }
+  return 100 - cashPct.value
+})
 
 const WEEKDAYS_LABEL = ['Ya', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh']
 
 const chart = computed(() => {
   const today = dayjs()
+  const todayStr = today.format('YYYY-MM-DD')
+
+  // Prefer server-provided daily breakdown.
+  const daily = finance.value?.dailyIncomes
+  if (Array.isArray(daily) && daily.length > 0) {
+    const buckets = daily.map(d => ({ label: d.dayLabel, value: d.amount, date: d.date }))
+    const activeIdx = buckets.findIndex(b => b.date === todayStr)
+    return buildChart(buckets, activeIdx)
+  }
+
+  // Local fallback
   if (activePeriod.value === 'today') {
     const buckets: { label: string; value: number }[] = []
     for (let h = 6; h < 24; h += 3) {
       buckets.push({ label: `${h}h`, value: 0 })
     }
-    const dayStr = today.format('YYYY-MM-DD')
     bookingsStore.bookings
-      .filter(b => b.stadiumId === stadiumId.value && b.date === dayStr
-        && b.paymentStatus === 'paid' && b.status === 'active')
+      .filter(b => b.date === todayStr && b.isPaid && b.status === 'active')
       .forEach(b => {
         const h = parseInt(b.startTime.split(':')[0])
         const idx = Math.min(buckets.length - 1, Math.max(0, Math.floor((h - 6) / 3)))
@@ -286,14 +316,13 @@ const chart = computed(() => {
       date: start.add(i, 'day').format('YYYY-MM-DD'),
     }))
     bookingsStore.bookings
-      .filter(b => b.stadiumId === stadiumId.value && b.paymentStatus === 'paid' && b.status === 'active')
+      .filter(b => b.isPaid && b.status === 'active')
       .forEach(b => {
         const bucket = buckets.find(x => x.date === b.date)
         if (bucket) bucket.value += b.price
       })
     return buildChart(buckets, today.day())
   }
-  // month
   const daysInMonth = today.daysInMonth()
   const buckets: { label: string; value: number }[] = []
   for (let d = 1; d <= daysInMonth; d += Math.ceil(daysInMonth / 7)) {
@@ -311,15 +340,41 @@ function buildChart(buckets: { label: string; value: number }[], activeIdx: numb
   }))
 }
 
-const unpaid = computed(() =>
-  bookingsStore.unpaidBookings
-    .filter(b => b.stadiumId === stadiumId.value)
-    .slice(0, 6)
-)
+const unpaid = computed(() => {
+  if (finance.value?.unpaidBookings?.length) {
+    return finance.value.unpaidBookings.map(normalizeBooking).slice(0, 6)
+  }
+  return bookingsStore.unpaidBookings.slice(0, 6)
+})
 
 const unpaidTotal = computed(() =>
-  unpaid.value.reduce((sum, b) => sum + b.price, 0)
+  finance.value?.totalUnpaid ?? unpaid.value.reduce((sum, b) => sum + b.price, 0)
 )
+const unpaidCount = computed(() =>
+  finance.value?.unpaidCount ?? unpaid.value.length
+)
+
+async function loadFinance() {
+  loading.value = true
+  try {
+    finance.value = await financeApi.getFinance(activePeriod.value) as any
+  } catch {
+    finance.value = null
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!stadiumsStore.loaded) await stadiumsStore.loadAll()
+  await Promise.all([
+    bookingsStore.loadByDate(dateRange.value.start).catch(() => {}),
+    bookingsStore.loadByDate(dateRange.value.end).catch(() => {}),
+    loadFinance(),
+  ])
+})
+
+watch(activePeriod, () => { loadFinance() })
 
 function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') }
 </script>

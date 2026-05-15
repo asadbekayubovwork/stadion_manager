@@ -64,11 +64,11 @@
           — {{ booking.endTime }}
         </div>
         <div style="margin-top:12px; font-size:20px; font-weight:800; color:#ffffff;">
-          {{ booking.clientName }}
+          {{ booking.customerName }}
         </div>
         <div style="font-size:14px; color:rgba(255,255,255,0.8); font-weight:500;
                     margin-top:2px; font-family:'Inter', sans-serif;">
-          {{ booking.clientPhone }}
+          {{ booking.customerPhone }}
         </div>
       </div>
 
@@ -194,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useBookingsStore } from '../stores/bookings'
 import { useStadiumsStore } from '../stores/stadiums'
@@ -208,21 +208,34 @@ const stadiumsStore = useStadiumsStore()
 
 const showEdit = ref(false)
 
+const bookingId = computed(() => Number(route.params.id))
+
 const booking = computed(() =>
-  bookingsStore.bookings.find(b => b.id === route.params.id)
+  bookingsStore.bookings.find(b => b.id === bookingId.value)
 )
 
 const fieldName = computed(() =>
   booking.value ? fieldNameOf(booking.value.fieldId) : ''
 )
 
-function fieldNameOf(fieldId: string) {
+function fieldNameOf(fieldId: number) {
   for (const s of stadiumsStore.stadiums) {
     const f = s.fields.find(f => f.id === fieldId)
     if (f) return f.name
   }
-  return fieldId
+  return String(fieldId)
 }
+
+onMounted(async () => {
+  if (!stadiumsStore.loaded) await stadiumsStore.loadAll()
+  if (!booking.value && bookingId.value) {
+    await bookingsStore.loadBooking(bookingId.value).catch(() => {})
+  }
+})
+
+watch(bookingId, async id => {
+  if (id && !booking.value) await bookingsStore.loadBooking(id).catch(() => {})
+})
 
 const heroColor = computed(() =>
   booking.value?.paymentStatus === 'paid' ? '#16a34a' : '#f97316'
@@ -272,27 +285,31 @@ const infoRows = computed(() => {
 
 const clientHistory = computed(() => {
   const b = booking.value
-  if (!b || !b.clientPhone) return []
+  if (!b || !b.customerPhone) return []
   return bookingsStore.bookings
     .filter(x =>
       x.id !== b.id &&
       x.status === 'active' &&
-      (x.clientPhone === b.clientPhone || x.clientName === b.clientName)
+      (x.customerPhone === b.customerPhone || x.customerName === b.customerName)
     )
     .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
     .slice(0, 5)
 })
 
-function onMarkPaid() {
+async function onMarkPaid() {
   if (!booking.value) return
-  bookingsStore.markPaid(booking.value.id, 'cash')
+  try { await bookingsStore.markPaid(booking.value.id, 'cash') }
+  catch (e: any) { alert(e?.message || 'Xato') }
 }
 
-function onCancel() {
+async function onCancel() {
   if (!booking.value) return
-  if (confirm('Bronni bekor qilishni tasdiqlaysizmi?')) {
-    bookingsStore.cancelBooking(booking.value.id)
+  if (!confirm('Bronni bekor qilishni tasdiqlaysizmi?')) return
+  try {
+    await bookingsStore.cancelBooking(booking.value.id)
     router.back()
+  } catch (e: any) {
+    alert(e?.message || 'Xato')
   }
 }
 

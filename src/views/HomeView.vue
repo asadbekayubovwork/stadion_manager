@@ -68,7 +68,7 @@
             </div>
             <div style="font-size:20px; font-weight:900; color:#0f172a;
                         font-family:'Inter', sans-serif;">
-              {{ todayBookings.length }}
+              {{ todayBookingsCount }}
             </div>
             <div style="font-size:11px; color:#f97316; font-weight:700;">
               {{ todayUnpaidCount }} to'lanmagan
@@ -142,7 +142,7 @@
             <div style="flex:1; min-width:0;">
               <div style="font-size:14px; font-weight:800; color:#0f172a;
                           overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-                {{ b.clientName }}
+                {{ b.customerName }}
               </div>
               <div style="font-size:12px; color:#475569; font-weight:600; margin-top:2px;">
                 {{ fieldName(b.fieldId) }} ·
@@ -171,11 +171,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useBookingsStore } from '../stores/bookings'
 import { useStadiumsStore } from '../stores/stadiums'
+import * as dashboardApi from '../api/dashboard'
+import { normalizeBooking } from '../utils/booking'
+import type { DashboardData } from '../types'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -184,7 +187,26 @@ const bookingsStore = useBookingsStore()
 const stadiumsStore = useStadiumsStore()
 
 const today = dayjs().format('YYYY-MM-DD')
-const yesterday = dayjs().subtract(1, 'day').format('YYYY-MM-DD')
+
+const dashboard = ref<DashboardData | null>(null)
+
+async function loadDashboard() {
+  try {
+    const d = await dashboardApi.getDashboard() as any
+    if (Array.isArray(d?.recentBookings)) {
+      d.recentBookings = d.recentBookings.map(normalizeBooking)
+    }
+    dashboard.value = d
+  } catch {}
+}
+
+onMounted(async () => {
+  if (!stadiumsStore.loaded) await stadiumsStore.loadAll()
+  await Promise.all([
+    bookingsStore.loadByDate(today).catch(() => {}),
+    loadDashboard(),
+  ])
+})
 
 const WEEKDAYS_UZ = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba']
 const MONTHS_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr']
@@ -199,28 +221,30 @@ const userInitial = computed(() => auth.user?.name?.trim().charAt(0).toUpperCase
 const stadiumId = computed(() => stadiumsStore.activeStadiumId)
 const stadium = computed(() => stadiumsStore.activeStadium)
 
-const revenue = computed(() => bookingsStore.todayRevenue(stadiumId.value))
-const yesterdayRevenue = computed(() =>
-  bookingsStore.revenueByPeriod(stadiumId.value, yesterday, yesterday).total
+const revenue = computed(() =>
+  dashboard.value?.todayIncome ?? bookingsStore.todayRevenue()
 )
-const revenueDeltaPct = computed(() => {
-  const y = yesterdayRevenue.value
-  if (!y) return revenue.value > 0 ? 100 : 0
-  return Math.round(((revenue.value - y) / y) * 100)
-})
+const revenueDeltaPct = computed(() =>
+  Math.round(dashboard.value?.incomeChangePercent ?? 0)
+)
 
 const todayBookings = computed(() =>
-  stadiumId.value ? bookingsStore.getForStadiumAndDate(stadiumId.value, today) : []
+  bookingsStore.getForStadiumAndDate(stadiumId.value, today)
+)
+
+const todayBookingsCount = computed(() =>
+  dashboard.value?.todayBookingsCount ?? todayBookings.value.length
 )
 
 const todayUnpaidCount = computed(() =>
-  todayBookings.value.filter(b => b.paymentStatus === 'unpaid').length
+  dashboard.value?.unpaidBookingsCount ??
+  todayBookings.value.filter(b => !b.isPaid).length
 )
 
 const totalHours = computed(() => {
+  if (typeof dashboard.value?.totalHours === 'number') return dashboard.value.totalHours
   const s = stadium.value
-  const fieldsCount = s?.fields.length ?? 1
-  return s ? (s.workEnd - s.workStart) * fieldsCount : 18
+  return s ? (s.workEnd - s.workStart) : 18
 })
 
 function timeToMinutes(hhmm: string) {
@@ -228,13 +252,21 @@ function timeToMinutes(hhmm: string) {
   return h * 60 + m
 }
 
-const bookedHours = computed(() =>
-  Math.round(
-    todayBookings.value.reduce((sum, b) => sum + (timeToMinutes(b.endTime) - timeToMinutes(b.startTime)), 0) / 60
+const bookedHours = computed(() => {
+  if (typeof dashboard.value?.busyHours === 'number') return dashboard.value.busyHours
+  return Math.round(
+    todayBookings.value.reduce(
+      (sum, b) => sum + (timeToMinutes(b.endTime) - timeToMinutes(b.startTime)),
+      0
+    ) / 60
   )
-)
+})
 
 const timelineBars = computed(() => {
+  const schedule = dashboard.value?.todaySchedule
+  if (Array.isArray(schedule) && schedule.length > 0) {
+    return schedule.map(s => s.isBusy)
+  }
   const s = stadium.value
   if (!s) return Array(12).fill(false)
   const bars: boolean[] = []
@@ -253,15 +285,17 @@ const timelineBars = computed(() => {
 })
 
 const now = dayjs().format('HH:mm')
-const upcoming = computed(() =>
-  todayBookings.value
+const upcoming = computed(() => {
+  const recent = dashboard.value?.recentBookings
+  if (Array.isArray(recent) && recent.length > 0) return recent.slice(0, 5)
+  return todayBookings.value
     .filter(b => b.endTime > now)
     .sort((a, b) => a.startTime.localeCompare(b.startTime))
     .slice(0, 5)
-)
+})
 
-function fieldName(fieldId: string) {
-  return stadium.value?.fields.find(f => f.id === fieldId)?.name ?? fieldId
+function fieldName(fieldId: number) {
+  return stadium.value?.fields.find(f => f.id === fieldId)?.name ?? String(fieldId)
 }
 function formatMoney(n: number) {
   return n.toLocaleString('uz-UZ').replace(/,/g, ' ')

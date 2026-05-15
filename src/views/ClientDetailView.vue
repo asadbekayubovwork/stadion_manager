@@ -6,7 +6,7 @@
         <svg class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
       </button>
       <div class="w-11 h-11 rounded-full bg-brand-light flex items-center justify-center flex-shrink-0">
-        <span class="text-brand font-bold text-lg">{{ client.name.charAt(0).toUpperCase() }}</span>
+        <span class="text-brand font-bold text-lg">{{ (client.name || '?').charAt(0).toUpperCase() }}</span>
       </div>
       <div>
         <p class="font-bold text-gray-900">{{ client.name }}</p>
@@ -29,7 +29,12 @@
     <!-- Booking history -->
     <div class="px-4 pb-4">
       <h2 class="font-bold text-gray-900 mb-3">{{ t('clients.bookingHistory') }}</h2>
-      <div v-if="bookings.length === 0" class="text-center py-10 text-gray-400 text-sm">{{ t('clients.noBookings') }}</div>
+      <div v-if="loading && bookings.length === 0" class="text-center py-10 text-gray-400 text-sm">
+        Yuklanmoqda…
+      </div>
+      <div v-else-if="bookings.length === 0" class="text-center py-10 text-gray-400 text-sm">
+        {{ t('clients.noBookings') }}
+      </div>
       <div class="flex flex-col gap-2">
         <div
           v-for="b in bookings"
@@ -45,9 +50,9 @@
               <p class="text-sm font-bold text-gray-900">{{ formatMoney(b.price) }}</p>
               <span
                 class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-1"
-                :class="b.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'"
+                :class="b.isPaid ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-600'"
               >
-                {{ b.paymentStatus === 'paid' ? t('booking.paid') : t('booking.unpaid') }}
+                {{ b.isPaid ? t('booking.paid') : t('booking.unpaid') }}
               </span>
             </div>
           </div>
@@ -55,31 +60,62 @@
       </div>
     </div>
   </div>
-  <div v-else class="flex items-center justify-center h-32 text-gray-400">Client not found</div>
+  <div v-else-if="loading" class="flex items-center justify-center h-32 text-gray-400">Yuklanmoqda…</div>
+  <div v-else class="flex items-center justify-center h-32 text-gray-400">Mijoz topilmadi</div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useClientsStore } from '../stores/clients'
-import { useBookingsStore } from '../stores/bookings'
 import { useStadiumsStore } from '../stores/stadiums'
+import type { CustomerDetail } from '../types'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const clientsStore = useClientsStore()
-const bookingsStore = useBookingsStore()
 const stadiumsStore = useStadiumsStore()
 
-const client = computed(() => clientsStore.findById(route.params.id as string))
-const bookings = computed(() => client.value ? bookingsStore.getForClient(client.value.id) : [])
-const totalSpent = computed(() => bookings.value.filter(b => b.paymentStatus === 'paid').reduce((s, b) => s + b.price, 0))
+const detail = ref<CustomerDetail | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-function fieldName(fieldId: string) {
-  const stadium = stadiumsStore.stadiums.find(s => s.fields.some(f => f.id === fieldId))
-  return stadium?.fields.find(f => f.id === fieldId)?.name ?? fieldId
+const customerId = computed(() => Number(route.params.id))
+
+const client = computed(() => detail.value ?? clientsStore.findById(customerId.value))
+const bookings = computed(() => detail.value?.bookings ?? [])
+const totalSpent = computed(() =>
+  bookings.value.filter(b => b.isPaid).reduce((s, b) => s + b.price, 0)
+)
+
+async function load(id: number) {
+  if (!id) return
+  loading.value = true
+  error.value = null
+  try {
+    detail.value = await clientsStore.loadDetail(id)
+  } catch (e: any) {
+    error.value = e?.message ?? 'Yuklashda xato'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(async () => {
+  if (!stadiumsStore.loaded) await stadiumsStore.loadAll()
+  await load(customerId.value)
+})
+
+watch(customerId, async id => { await load(id) })
+
+function fieldName(fieldId: number) {
+  for (const s of stadiumsStore.stadiums) {
+    const f = s.fields.find(f => f.id === fieldId)
+    if (f) return f.name
+  }
+  return String(fieldId)
 }
 function formatMoney(n: number) { return n.toLocaleString('uz-UZ') + " so'm" }
 </script>

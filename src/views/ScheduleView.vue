@@ -142,7 +142,7 @@
             <div style="display:flex; justify-content:space-between; align-items:flex-start;">
               <div style="font-size:13px; font-weight:800; color:#9a3412; min-width:0;
                           overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
-                {{ b.clientName }}
+                {{ b.customerName }}
               </div>
               <div
                 :style="b.paymentStatus === 'paid'
@@ -165,7 +165,7 @@
             </div>
             <div v-if="bookingHeight(b) >= 64"
                  style="font-size:11px; color:#9a3412; opacity:0.7; font-weight:500;">
-              {{ b.clientPhone }}
+              {{ b.customerPhone }}
             </div>
           </div>
         </div>
@@ -202,7 +202,7 @@ const PX_PER_MIN = 1.2
 const HOUR_HEIGHT = PX_PER_MIN * 60
 
 const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
-const selectedFieldId = ref(stadiumsStore.activeFieldId)
+const selectedFieldId = ref<number | ''>(stadiumsStore.activeFieldId)
 const timelineEl = ref<HTMLElement>()
 const showModal = ref(false)
 const editingBooking = ref<Booking | null>(null)
@@ -301,10 +301,14 @@ const emptySlots = computed(() => {
   return slots
 })
 
-function selectDate(d: string) { selectedDate.value = d }
-function selectField(id: string) {
-  selectedFieldId.value = id
-  stadiumsStore.setActiveField(id)
+function selectDate(d: string) {
+  selectedDate.value = d
+  bookingsStore.loadSchedule(d).catch(() => {})
+}
+function selectField(id: number | string) {
+  const n = Number(id)
+  selectedFieldId.value = n
+  stadiumsStore.setActiveField(n)
 }
 function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') }
 
@@ -319,6 +323,11 @@ function openBookingDetail(b: Booking) {
 function onSaved() { showModal.value = false }
 
 onMounted(async () => {
+  if (!stadiumsStore.loaded) await stadiumsStore.loadAll()
+  if (!selectedFieldId.value && stadiumsStore.fields[0]) {
+    selectedFieldId.value = stadiumsStore.fields[0].id
+  }
+  await bookingsStore.loadSchedule(selectedDate.value).catch(() => {})
   await nextTick()
   if (timelineEl.value) {
     const scrollY = isToday.value && nowY.value > 0
@@ -328,7 +337,9 @@ onMounted(async () => {
   }
 })
 
-watch(() => stadiumsStore.activeFieldId, id => { selectedFieldId.value = id })
+watch(() => stadiumsStore.activeFieldId, id => {
+  if (id !== '') selectedFieldId.value = Number(id)
+})
 </script>
 
 <style scoped>

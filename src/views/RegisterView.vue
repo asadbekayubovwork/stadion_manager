@@ -177,6 +177,14 @@
         Parollar mos kelmadi
       </p>
 
+      <!-- Server error -->
+      <p
+        v-if="errorMsg"
+        style="font-size:13px; font-weight:500; color:#f43f5e; margin:0; padding-left:2px;"
+      >
+        {{ errorMsg }}
+      </p>
+
     </div>
 
     <!-- ── BOTTOM BUTTON ── -->
@@ -186,22 +194,22 @@
       :style="{ paddingBottom: buttonBottomPad }"
     >
       <button
-        @click="register"
-        :disabled="!isValid"
+        @click="onRegister"
+        :disabled="!isValid || loading"
         class="relative flex items-center justify-center w-full transition-all active:scale-95"
         style="height:61.5px; min-height:61.5px; flex-shrink:0; border-radius:9999px; border:none; cursor:pointer;"
-        :style="isValid
+        :style="(isValid && !loading)
           ? 'background:#16a34a; box-shadow:0px 4px 14px rgba(22,163,74,0.3);'
           : 'background:#e2e8f0; cursor:not-allowed;'"
       >
         <span
           style="font-size:17px; font-weight:600; line-height:25.5px;"
-          :style="isValid ? 'color:#ffffff;' : 'color:#94a3b8;'"
+          :style="(isValid && !loading) ? 'color:#ffffff;' : 'color:#94a3b8;'"
         >
-          Ro'yxatdan o'tish
+          {{ loading ? "Yaratilmoqda…" : "Ro'yxatdan o'tish" }}
         </span>
         <svg
-          v-if="isValid"
+          v-if="isValid && !loading"
           class="absolute"
           style="right: 20px; top: 50%; transform: translateY(-50%);"
           width="20" height="20" viewBox="0 0 20 20" fill="none"
@@ -233,10 +241,12 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { nanoid } from '../utils/nanoid'
+import { useStadiumsStore } from '../stores/stadiums'
+import { ApiError } from '../api/http'
 
 const router = useRouter()
 const auth = useAuthStore()
+const stadiumsStore = useStadiumsStore()
 
 const name = ref('')
 const phone = ref('')
@@ -249,6 +259,8 @@ const focusedPassword = ref(false)
 const focusedConfirm = ref(false)
 const confirmTouched = ref(false)
 const showPassword = ref(false)
+const loading = ref(false)
+const errorMsg = ref('')
 
 const tg = (window as any).Telegram?.WebApp
 
@@ -281,15 +293,28 @@ function formatPhone(e: Event) {
   phone.value = f
 }
 
-function register() {
-  if (!isValid.value) return
-  auth.login({
-    id: nanoid(),
-    phone: '+998' + digits.value,
-    name: name.value.trim(),
-    stadiumIds: [],
-  })
-  const isOnboarded = localStorage.getItem('sm_onboarded') === 'true'
-  router.push({ name: isOnboarded ? 'home' : 'onboarding' })
+async function onRegister() {
+  if (!isValid.value || loading.value) return
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    await auth.register(name.value.trim(), '+998' + digits.value, password.value)
+    await stadiumsStore.loadAll()
+    router.push({ name: 'onboarding' })
+  } catch (e) {
+    if (e instanceof ApiError) {
+      if (e.status === 409 || e.status === 400) {
+        errorMsg.value = e.message || "Bu telefon allaqachon ro'yxatdan o'tgan"
+      } else if (e.status === 0) {
+        errorMsg.value = 'Internet ulanmagan'
+      } else {
+        errorMsg.value = e.message || 'Xatolik yuz berdi'
+      }
+    } else {
+      errorMsg.value = 'Xatolik yuz berdi'
+    }
+  } finally {
+    loading.value = false
+  }
 }
 </script>

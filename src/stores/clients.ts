@@ -1,54 +1,84 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import type { Client } from '../types'
-import { nanoid } from '../utils/nanoid'
-
-const STORAGE_KEY = 'sm_clients'
+import { ref, computed } from 'vue'
+import type { Customer, CustomerDetail } from '../types'
+import * as customersApi from '../api/customers'
+import { normalizeBooking } from '../utils/booking'
 
 export const useClientsStore = defineStore('clients', () => {
-  const clients = ref<Client[]>([])
+  const clients = ref<Customer[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
+  const detailCache = ref<Record<number, CustomerDetail>>({})
 
-  function init() {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      clients.value = JSON.parse(saved)
-    } else {
-      // demo clients
-      clients.value = [
-        { id: 'c1', name: 'Jahongir Olimov', phone: '+998901234567', createdAt: new Date().toISOString() },
-        { id: 'c2', name: "Laziz To'rayev", phone: '+998902345678', createdAt: new Date().toISOString() },
-        { id: 'c3', name: 'Doniyor Hasanov', phone: '+998903456789', createdAt: new Date().toISOString() },
-      ]
-      persist()
+  const sorted = computed(() =>
+    [...clients.value].sort((a, b) =>
+      (b.totalSpent ?? 0) - (a.totalSpent ?? 0) ||
+      a.name.localeCompare(b.name)
+    )
+  )
+
+  async function load(search?: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const list = await customersApi.getCustomers(search)
+      clients.value = Array.isArray(list) ? list : []
+    } catch (e: any) {
+      error.value = e?.message ?? 'Yuklashda xato'
+    } finally {
+      loading.value = false
     }
   }
 
-  function persist() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(clients.value))
+  async function loadDetail(id: number) {
+    const raw = await customersApi.getCustomer(id)
+    const detail: CustomerDetail = {
+      ...(raw as any),
+      bookings: Array.isArray((raw as any)?.bookings)
+        ? (raw as any).bookings.map(normalizeBooking)
+        : [],
+    }
+    detailCache.value[id] = detail
+    return detail
+  }
+
+  function findById(id: number) {
+    return clients.value.find(c => c.id === id) ?? detailCache.value[id] ?? null
   }
 
   function findByPhone(phone: string) {
-    return clients.value.find(c => c.phone === phone)
+    return clients.value.find(c => c.phone === phone) ?? null
   }
 
-  function findById(id: string) {
-    return clients.value.find(c => c.id === id)
+  async function createCustomer(payload: { name: string; phone: string }) {
+    const created = await customersApi.createCustomer(payload)
+    if (created) clients.value.unshift(created)
+    return created
   }
 
-  function upsert(name: string, phone: string): Client {
-    const existing = findByPhone(phone)
-    if (existing) {
-      if (existing.name !== name) {
-        existing.name = name
-        persist()
-      }
-      return existing
+  async function updateCustomer(payload: { id: number; name?: string; phone?: string }) {
+    const updated = await customersApi.updateCustomer(payload)
+    const idx = clients.value.findIndex(c => c.id === payload.id)
+    if (idx !== -1 && updated) {
+      clients.value[idx] = { ...clients.value[idx], ...updated }
     }
-    const client: Client = { id: nanoid(), name, phone, createdAt: new Date().toISOString() }
-    clients.value.push(client)
-    persist()
-    return client
+    return updated
   }
 
-  return { clients, init, findByPhone, findById, upsert }
+  async function deleteCustomer(id: number) {
+    await customersApi.deleteCustomer(id)
+    clients.value = clients.value.filter(c => c.id !== id)
+    delete detailCache.value[id]
+  }
+
+  function reset() {
+    clients.value = []
+    detailCache.value = {}
+  }
+
+  return {
+    clients, sorted, loading, error,
+    load, loadDetail, findById, findByPhone,
+    createCustomer, updateCustomer, deleteCustomer, reset,
+  }
 })

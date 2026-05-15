@@ -38,7 +38,9 @@
         style="padding: 17px; border-radius: 16px; position: relative; margin-top: -8px;"
         :style="phoneFocused
           ? 'border: 1px solid rgba(22,163,74,0.8); box-shadow: 0px 0px 0px 4px rgba(22,163,74,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1);'
-          : 'border: 1px solid rgba(22,163,74,0.5); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'"
+          : errorMsg
+            ? 'border: 1px solid rgba(244,63,94,0.6); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'
+            : 'border: 1px solid rgba(22,163,74,0.5); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'"
       >
         <!-- Country prefix -->
         <div class="flex items-center flex-shrink-0" style="padding-right:17px; border-right: 1px solid rgba(226,232,240,0.7); gap:8px;">
@@ -119,6 +121,14 @@
         </button>
       </div>
 
+      <!-- Error message -->
+      <p
+        v-if="errorMsg"
+        style="font-size:13px; font-weight:500; color:#f43f5e; margin:0; padding-left:2px;"
+      >
+        {{ errorMsg }}
+      </p>
+
       <!-- Security note -->
       <div class="flex items-center" style="gap:8px; padding-top:4px;">
         <svg class="flex-shrink-0" width="16" height="16" viewBox="0 0 12 14.6689" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -141,21 +151,21 @@
     >
       <button
         @click="proceed"
-        :disabled="!isValid"
+        :disabled="!isValid || loading"
         class="relative flex items-center justify-center w-full transition-all active:scale-95"
         style="height:61.5px; border-radius:9999px; border:none; cursor:pointer;"
-        :style="isValid
+        :style="(isValid && !loading)
           ? 'background:#16a34a; box-shadow:0px 1px 3px 0px rgba(22,163,74,0.2), 0px 1px 2px -1px rgba(22,163,74,0.2);'
           : 'background:#e2e8f0; cursor:not-allowed;'"
       >
         <span
           style="font-size:17px; font-weight:600; line-height:25.5px; letter-spacing:0;"
-          :style="isValid ? 'color:#ffffff;' : 'color:#94a3b8;'"
+          :style="(isValid && !loading) ? 'color:#ffffff;' : 'color:#94a3b8;'"
         >
-          Kirish
+          {{ loading ? 'Kirilmoqda…' : 'Kirish' }}
         </span>
         <svg
-          v-if="isValid"
+          v-if="isValid && !loading"
           class="absolute"
           style="right: 20px; top: 50%; transform: translateY(-50%);"
           width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"
@@ -187,16 +197,20 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { nanoid } from '../utils/nanoid'
+import { useStadiumsStore } from '../stores/stadiums'
+import { ApiError } from '../api/http'
 
 const router = useRouter()
 const auth = useAuthStore()
+const stadiumsStore = useStadiumsStore()
 
 const phone = ref('')
 const password = ref('')
 const phoneFocused = ref(false)
 const passwordFocused = ref(false)
 const showPassword = ref(false)
+const loading = ref(false)
+const errorMsg = ref('')
 
 const tg = (window as any).Telegram?.WebApp
 
@@ -222,15 +236,29 @@ function formatPhone(e: Event) {
   phone.value = f
 }
 
-function proceed() {
-  if (!isValid.value) return
-  auth.login({
-    id: nanoid(),
-    phone: '+998' + digits.value,
-    name: '',
-    stadiumIds: [],
-  })
-  const isOnboarded = localStorage.getItem('sm_onboarded') === 'true'
-  router.push({ name: isOnboarded ? 'home' : 'onboarding' })
+async function proceed() {
+  if (!isValid.value || loading.value) return
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    await auth.login('+998' + digits.value, password.value)
+    await stadiumsStore.loadAll()
+    const hasStadium = !!stadiumsStore.settings?.name
+    router.push({ name: hasStadium ? 'home' : 'onboarding' })
+  } catch (e) {
+    if (e instanceof ApiError) {
+      if (e.status === 401 || e.status === 400) {
+        errorMsg.value = 'Telefon yoki parol noto\'g\'ri'
+      } else if (e.status === 0) {
+        errorMsg.value = 'Internet ulanmagan'
+      } else {
+        errorMsg.value = e.message || 'Xatolik yuz berdi'
+      }
+    } else {
+      errorMsg.value = 'Xatolik yuz berdi'
+    }
+  } finally {
+    loading.value = false
+  }
 }
 </script>

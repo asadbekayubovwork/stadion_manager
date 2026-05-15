@@ -1,101 +1,254 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Booking, PaymentMethod } from '../types'
-import { nanoid } from '../utils/nanoid'
+import * as bookingsApi from '../api/bookings'
+import { normalizeBooking, buildIso, methodToId, parseScheduleBookings } from '../utils/booking'
 import dayjs from 'dayjs'
 
-const STORAGE_KEY = 'sm_bookings'
-
 export const useBookingsStore = defineStore('bookings', () => {
-  const bookings = ref<Booking[]>([])
+  // All bookings we've loaded, keyed by id. We merge results from list/schedule/detail.
+  const byId = ref<Record<number, Booking>>({})
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-  function init() {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      bookings.value = JSON.parse(saved)
-    } else {
-      seedDemo()
+  const bookings = computed<Booking[]>(() => Object.values(byId.value))
+
+  function upsert(list: Booking[]) {
+    for (const b of list) byId.value[b.id] = b
+  }
+
+  function remove(id: number) {
+    delete byId.value[id]
+  }
+
+  async function loadByDate(date: string, fieldId?: number) {
+    loading.value = true
+    error.value = null
+    try {
+      const list = await bookingsApi.getBookings({ date, fieldId })
+      const normalized = (Array.isArray(list) ? list : []).map(normalizeBooking)
+      upsert(normalized)
+      return normalized
+    } catch (e: any) {
+      error.value = e?.message ?? 'Yuklashda xato'
+      return []
+    } finally {
+      loading.value = false
     }
   }
 
-  function persist() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings.value))
+  async function loadSchedule(date: string) {
+    loading.value = true
+    error.value = null
+    try {
+      const resp = await bookingsApi.getSchedule(date)
+      const normalized = parseScheduleBookings(resp)
+      upsert(normalized)
+      return resp
+    } catch (e: any) {
+      error.value = e?.message ?? 'Yuklashda xato'
+      return null
+    } finally {
+      loading.value = false
+    }
   }
 
-  function seedDemo() {
-    bookings.value = []
-    persist()
+  async function loadBooking(id: number) {
+    const raw = await bookingsApi.getBooking(id)
+    const b = normalizeBooking(raw)
+    upsert([b])
+    return b
   }
 
-  function getForFieldAndDate(fieldId: string, date: string) {
-    return bookings.value.filter(
-      b => b.fieldId === fieldId && b.date === date && b.status === 'active'
-    )
+  function getForFieldAndDate(fieldId: number | string, date: string) {
+    const fid = Number(fieldId)
+    return bookings.value
+      .filter(b => b.fieldId === fid && b.date === date && b.status === 'active')
+      .sort((a, b) => a.startTime.localeCompare(b.startTime))
   }
 
-  function getForStadiumAndDate(stadiumId: string, date: string) {
-    return bookings.value.filter(
-      b => b.stadiumId === stadiumId && b.date === date && b.status === 'active'
-    )
+  function getForStadiumAndDate(_stadiumId: any, date: string) {
+    return bookings.value
+      .filter(b => b.date === date && b.status === 'active')
+      .sort((a, b) => a.startTime.localeCompare(b.startTime))
   }
 
-  function getForClient(clientId: string) {
-    return bookings.value.filter(b => b.clientId === clientId).sort(
-      (a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime)
-    )
+  function getForClient(customerId: number) {
+    return bookings.value
+      .filter(b => b.customerId === customerId)
+      .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
   }
 
-  function hasConflict(fieldId: string, date: string, startTime: string, endTime: string, excludeId?: string) {
+  // Client-side conflict hint — server is the source of truth and returns 409.
+  function hasConflict(
+    fieldId: number | string,
+    date: string,
+    startTime: string,
+    endTime: string,
+    excludeId?: number
+  ) {
+    const fid = Number(fieldId)
     return bookings.value.some(b => {
-      if (b.fieldId !== fieldId || b.date !== date || b.status !== 'active') return false
+      if (b.fieldId !== fid || b.date !== date || b.status !== 'active') return false
       if (excludeId && b.id === excludeId) return false
       return b.startTime < endTime && b.endTime > startTime
     })
   }
 
-  function addBooking(data: Omit<Booking, 'id' | 'createdAt'>) {
-    const booking: Booking = {
-      ...data,
-      id: nanoid(),
-      createdAt: new Date().toISOString(),
-    }
-    bookings.value.push(booking)
-    persist()
-    return booking
-  }
-
-  function updateBooking(id: string, patch: Partial<Booking>) {
-    const idx = bookings.value.findIndex(b => b.id === id)
-    if (idx !== -1) {
-      bookings.value[idx] = { ...bookings.value[idx], ...patch }
-      persist()
-    }
-  }
-
-  function markPaid(id: string, method: PaymentMethod) {
-    updateBooking(id, { paymentStatus: 'paid', paymentMethod: method })
-  }
-
-  function cancelBooking(id: string) {
-    updateBooking(id, { status: 'cancelled' })
-  }
-
   const unpaidBookings = computed(() =>
-    bookings.value.filter(b => b.paymentStatus === 'unpaid' && b.status === 'active')
+    bookings.value
+      .filter(b => !b.isPaid && b.status === 'active')
       .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
   )
 
-  function todayRevenue(stadiumId: string) {
-    const today = dayjs().format('YYYY-MM-DD')
-    return bookings.value
-      .filter(b => b.stadiumId === stadiumId && b.date === today && b.paymentStatus === 'paid' && b.status === 'active')
-      .reduce((sum, b) => sum + b.price, 0)
+  async function createBooking(input: {
+    fieldId: number
+    customerId?: number | null
+    customerName: string
+    customerPhone: string
+    date: string
+    startTime: string
+    endTime: string
+    isPaid?: boolean
+    paymentMethod?: PaymentMethod
+    notes?: string | null
+    price?: number
+  }) {
+    const payload = {
+      fieldId: input.fieldId,
+      customerId: input.customerId ?? null,
+      customerName: input.customerName,
+      customerPhone: input.customerPhone,
+      startTime: buildIso(input.date, input.startTime),
+      endTime: buildIso(input.date, input.endTime),
+      isPaid: !!input.isPaid,
+      paymentMethodId: input.isPaid && input.paymentMethod ? methodToId(input.paymentMethod) : null,
+      notes: input.notes ?? null,
+    }
+    const created = await bookingsApi.createBooking(payload)
+    const normalized = normalizeBooking({ ...(created ?? payload), id: (created as any)?.id ?? Date.now() })
+    upsert([normalized])
+    return normalized
   }
 
-  function revenueByPeriod(stadiumId: string, start: string, end: string) {
+  async function updateBookingFull(id: number, patch: {
+    customerId?: number | null
+    customerName?: string
+    customerPhone?: string
+    date?: string
+    startTime?: string
+    endTime?: string
+    notes?: string | null
+  }) {
+    const existing = byId.value[id]
+    const date = patch.date ?? existing?.date
+    const payload: any = { id }
+    if (patch.customerId !== undefined) payload.customerId = patch.customerId
+    if (patch.customerName !== undefined) payload.customerName = patch.customerName
+    if (patch.customerPhone !== undefined) payload.customerPhone = patch.customerPhone
+    if (patch.startTime && date) payload.startTime = buildIso(date, patch.startTime)
+    if (patch.endTime && date) payload.endTime = buildIso(date, patch.endTime)
+    if (patch.notes !== undefined) payload.notes = patch.notes
+
+    const updated = await bookingsApi.updateBooking(payload)
+    if (updated) {
+      const n = normalizeBooking(updated)
+      upsert([n])
+      return n
+    }
+    // optimistic fallback
+    if (existing) {
+      const merged: Booking = {
+        ...existing,
+        ...(patch.customerName !== undefined ? { customerName: patch.customerName } : {}),
+        ...(patch.customerPhone !== undefined ? { customerPhone: patch.customerPhone } : {}),
+        ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
+        date: date ?? existing.date,
+        startTime: patch.startTime ?? existing.startTime,
+        endTime: patch.endTime ?? existing.endTime,
+      }
+      byId.value[id] = merged
+      return merged
+    }
+    return null
+  }
+
+  async function payBooking(id: number, method: PaymentMethod) {
+    const updated = await bookingsApi.payBooking(id, methodToId(method))
+    if (updated) {
+      const n = normalizeBooking(updated)
+      upsert([n])
+      return n
+    }
+    const existing = byId.value[id]
+    if (existing) {
+      const merged: Booking = {
+        ...existing,
+        isPaid: true,
+        paymentStatus: 'paid',
+        paymentMethod: method,
+        paymentMethodId: methodToId(method),
+      }
+      byId.value[id] = merged
+      return merged
+    }
+    return null
+  }
+
+  // Legacy compat helpers used by existing views
+  async function markPaid(id: number, method: PaymentMethod) {
+    return payBooking(id, method)
+  }
+
+  async function cancelBooking(id: number) {
+    await bookingsApi.deleteBooking(id)
+    remove(id)
+  }
+
+  async function addBooking(data: {
+    fieldId: number
+    stadiumId?: any
+    clientId?: any
+    customerId?: number | null
+    clientName?: string
+    customerName?: string
+    clientPhone?: string
+    customerPhone?: string
+    date: string
+    startTime: string
+    endTime: string
+    durationMin?: number
+    price?: number
+    paymentStatus?: 'paid' | 'unpaid'
+    paymentMethod?: PaymentMethod
+    status?: 'active' | 'cancelled'
+    notes?: string | null
+  }) {
+    return createBooking({
+      fieldId: data.fieldId,
+      customerId: data.customerId ?? null,
+      customerName: data.customerName ?? data.clientName ?? '',
+      customerPhone: data.customerPhone ?? data.clientPhone ?? '',
+      date: data.date,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      isPaid: data.paymentStatus === 'paid',
+      paymentMethod: data.paymentMethod,
+      notes: data.notes ?? null,
+    })
+  }
+
+  // Local revenue helper used by HomeView / FinanceView when finance API is unavailable.
+  function todayRevenue(_stadiumId?: any) {
+    const today = dayjs().format('YYYY-MM-DD')
+    return bookings.value
+      .filter(b => b.date === today && b.isPaid && b.status === 'active')
+      .reduce((s, b) => s + b.price, 0)
+  }
+
+  function revenueByPeriod(_stadiumId: any, start: string, end: string) {
     const paid = bookings.value.filter(
-      b => b.stadiumId === stadiumId && b.date >= start && b.date <= end
-        && b.paymentStatus === 'paid' && b.status === 'active'
+      b => b.date >= start && b.date <= end && b.isPaid && b.status === 'active'
     )
     return {
       total: paid.reduce((s, b) => s + b.price, 0),
@@ -104,33 +257,16 @@ export const useBookingsStore = defineStore('bookings', () => {
     }
   }
 
-  function seedDemoWithFields(fieldId1: string, stadiumId: string, fieldId2: string) {
-    const today = dayjs().format('YYYY-MM-DD')
-    if (bookings.value.length > 0) return
-    const demos: Omit<Booking, 'id' | 'createdAt'>[] = [
-      {
-        fieldId: fieldId1, stadiumId, clientId: 'c1', clientName: 'Jahongir Olimov',
-        clientPhone: '+998901234567', date: today, startTime: '18:00', endTime: '19:30',
-        durationMin: 90, price: 375000, paymentStatus: 'paid', paymentMethod: 'cash', status: 'active',
-      },
-      {
-        fieldId: fieldId1, stadiumId, clientId: 'c2', clientName: 'Laziz To\'rayev',
-        clientPhone: '+998902345678', date: today, startTime: '20:00', endTime: '21:00',
-        durationMin: 60, price: 250000, paymentStatus: 'unpaid', status: 'active',
-      },
-      {
-        fieldId: fieldId2, stadiumId, clientId: 'c3', clientName: 'Doniyor Hasanov',
-        clientPhone: '+998903456789', date: today, startTime: '16:00', endTime: '17:30',
-        durationMin: 90, price: 300000, paymentStatus: 'unpaid', status: 'active',
-      },
-    ]
-    demos.forEach(d => addBooking(d))
+  function reset() {
+    byId.value = {}
   }
 
   return {
-    bookings, unpaidBookings,
-    init, getForFieldAndDate, getForStadiumAndDate, getForClient,
-    hasConflict, addBooking, updateBooking, markPaid, cancelBooking,
-    todayRevenue, revenueByPeriod, seedDemoWithFields,
+    bookings, unpaidBookings, loading, error,
+    loadByDate, loadSchedule, loadBooking,
+    getForFieldAndDate, getForStadiumAndDate, getForClient,
+    hasConflict, createBooking, addBooking,
+    updateBooking: updateBookingFull, payBooking, markPaid, cancelBooking,
+    todayRevenue, revenueByPeriod, reset,
   }
 })

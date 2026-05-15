@@ -158,20 +158,26 @@
       style="padding-top:16px; backdrop-filter: blur(8px); background: rgba(248,250,252,0.92); border-top: 1px solid rgba(226,232,240,0.6);"
       :style="{ paddingBottom: buttonBottomPad }"
     >
+      <p
+        v-if="errorMsg"
+        style="font-size:13px; font-weight:500; color:#f43f5e; margin:0 0 8px; padding-left:2px;"
+      >
+        {{ errorMsg }}
+      </p>
       <button
         @click="save"
-        :disabled="!isValid"
+        :disabled="!isValid || loading"
         class="relative flex items-center justify-center w-full transition-all active:scale-95"
         style="height:61.5px; border-radius:9999px; border:none; cursor:pointer;"
-        :style="isValid
+        :style="(isValid && !loading)
           ? 'background:#16a34a; box-shadow:0px 4px 14px rgba(22,163,74,0.3);'
           : 'background:#e2e8f0; cursor:not-allowed;'"
       >
         <span
           style="font-size:17px; font-weight:600; line-height:25.5px;"
-          :style="isValid ? 'color:#ffffff;' : 'color:#94a3b8;'"
+          :style="(isValid && !loading) ? 'color:#ffffff;' : 'color:#94a3b8;'"
         >
-          Saqlash va boshlash
+          {{ loading ? 'Saqlanmoqda…' : 'Saqlash va boshlash' }}
         </span>
         <svg
           v-if="isValid"
@@ -193,10 +199,13 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useStadiumsStore } from '../stores/stadiums'
+import { ApiError } from '../api/http'
 
 const router = useRouter()
 const auth = useAuthStore()
 const stadiumsStore = useStadiumsStore()
+const loading = ref(false)
+const errorMsg = ref('')
 
 const tg = (window as any).Telegram?.WebApp
 
@@ -229,25 +238,29 @@ function removeField(i: number) {
   fields.value.splice(i, 1)
 }
 
-function save() {
-  if (!isValid.value) return
-
-  // Foydalanuvchi ismini yangilash
-  if (auth.user) {
-    auth.login({ ...auth.user, name: name.value.trim() })
+async function save() {
+  if (!isValid.value || loading.value) return
+  loading.value = true
+  errorMsg.value = ''
+  try {
+    if (auth.user) auth.updateProfile({ name: name.value.trim() })
+    await stadiumsStore.updateStadiumSettings({
+      name: stadiumName.value.trim(),
+      workStartHour: 6,
+      workEndHour: 24,
+    })
+    const newFields = fields.value.filter(f => f.name.trim())
+    for (const f of newFields) {
+      await stadiumsStore.addField(1, f.name.trim(), Number(f.price) || 0)
+    }
+    await stadiumsStore.loadAll()
+    router.push({ name: 'home' })
+  } catch (e) {
+    errorMsg.value = e instanceof ApiError && e.message
+      ? e.message
+      : 'Saqlashda xato. Qayta urinib ko\'ring'
+  } finally {
+    loading.value = false
   }
-
-  // Eski demo stadionlarni o'chirib, yangi yaratish
-  const oldIds = stadiumsStore.stadiums.map(s => s.id)
-  oldIds.forEach(id => stadiumsStore.deleteStadium(id))
-
-  const stadiumId = stadiumsStore.addStadium(stadiumName.value.trim(), 6, 24)
-
-  fields.value
-    .filter(f => f.name.trim())
-    .forEach(f => stadiumsStore.addField(stadiumId, f.name.trim(), f.price ?? 0))
-
-  localStorage.setItem('sm_onboarded', 'true')
-  router.push({ name: 'home' })
 }
 </script>

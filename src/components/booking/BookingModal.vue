@@ -98,15 +98,15 @@
             <!-- Client name -->
             <div>
               <div :class="'lbl'">Mijoz</div>
-              <div :style="inputBox(form.clientName)">
+              <div :style="inputBox(form.customerName)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                     :stroke="form.clientName ? '#16a34a' : '#94a3b8'"
+                     :stroke="form.customerName ? '#16a34a' : '#94a3b8'"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
                   <circle cx="12" cy="7" r="4"/>
                 </svg>
                 <input
-                  v-model="form.clientName"
+                  v-model="form.customerName"
                   type="text"
                   placeholder="Mijoz ismi"
                   style="flex:1; outline:none; border:none; background:transparent;
@@ -126,7 +126,7 @@
                 <span style="font-size:14px; color:#0f172a; font-weight:600;
                              font-family:'Inter', sans-serif; flex-shrink:0;">+998</span>
                 <input
-                  v-model="form.clientPhone"
+                  v-model="form.customerPhone"
                   type="tel"
                   inputmode="numeric"
                   placeholder="90 123 45 67"
@@ -243,7 +243,7 @@
 
             <!-- Conflict warning -->
             <div
-              v-if="conflict"
+              v-if="conflict || serverError"
               style="display:flex; align-items:center; gap:8px;
                      background:#fee2e2; border-radius:12px; padding:12px 14px;
                      color:#dc2626;"
@@ -254,7 +254,9 @@
                 <line x1="12" y1="8" x2="12" y2="12"/>
                 <line x1="12" y1="16" x2="12.01" y2="16"/>
               </svg>
-              <span style="font-size:13px; font-weight:700;">Bu vaqt band!</span>
+              <span style="font-size:13px; font-weight:700;">
+                {{ serverError || 'Bu vaqt band!' }}
+              </span>
             </div>
           </div>
         </div>
@@ -266,20 +268,20 @@
         >
           <button
             @click="save"
-            :disabled="!canSave || conflict"
-            :style="canSave && !conflict
+            :disabled="!canSave || conflict || saving"
+            :style="canSave && !conflict && !saving
               ? 'width:100%; height:56px; border-radius:14px; background:#16a34a; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 16px rgba(22,163,74,0.33);'
               : 'width:100%; height:56px; border-radius:14px; background:#e2e8f0; border:none; cursor:not-allowed; display:flex; align-items:center; justify-content:center; gap:8px;'"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                 :stroke="canSave && !conflict ? '#ffffff' : '#94a3b8'"
+                 :stroke="canSave && !conflict && !saving ? '#ffffff' : '#94a3b8'"
                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-            <span :style="canSave && !conflict
+            <span :style="canSave && !conflict && !saving
               ? 'font-size:17px; font-weight:900; color:#ffffff;'
               : 'font-size:17px; font-weight:900; color:#94a3b8;'">
-              Bronni saqlash
+              {{ saving ? 'Saqlanmoqda…' : 'Bronni saqlash' }}
             </span>
           </button>
         </div>
@@ -293,7 +295,6 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useStadiumsStore } from '../../stores/stadiums'
 import { useBookingsStore } from '../../stores/bookings'
-import { useClientsStore } from '../../stores/clients'
 import type { Booking } from '../../types'
 import dayjs from 'dayjs'
 
@@ -302,13 +303,12 @@ const props = defineProps<{
   booking?: Booking | null
   defaultDate?: string
   defaultTime?: string
-  fieldId?: string
+  fieldId?: number | string
 }>()
 const emit = defineEmits<{ close: []; saved: [] }>()
 
 const stadiumsStore = useStadiumsStore()
 const bookingsStore = useBookingsStore()
-const clientsStore = useClientsStore()
 
 const isEdit = computed(() => !!props.booking)
 const fields = computed(() => stadiumsStore.activeStadium?.fields ?? [])
@@ -321,9 +321,9 @@ const durations = [
 ]
 
 interface Form {
-  clientName: string
-  clientPhone: string
-  fieldId: string
+  customerName: string
+  customerPhone: string
+  fieldId: number | ''
   date: string
   startTime: string
   durationMin: number
@@ -332,23 +332,26 @@ interface Form {
 }
 
 const form = ref<Form>({
-  clientName: '',
-  clientPhone: '',
-  fieldId: props.fieldId ?? fields.value[0]?.id ?? '',
+  customerName: '',
+  customerPhone: '',
+  fieldId: (props.fieldId !== undefined && props.fieldId !== '' ? Number(props.fieldId) : (fields.value[0]?.id ?? '')) as number | '',
   date: props.defaultDate ?? dayjs().format('YYYY-MM-DD'),
   startTime: props.defaultTime || `${String((stadiumsStore.activeStadium?.workStart ?? 6) + 12).padStart(2, '0')}:00`,
   durationMin: 60,
   price: 0,
   notes: '',
 })
+const saving = ref(false)
+const serverError = ref('')
 
 function resetForm() {
+  serverError.value = ''
   if (props.booking) {
     const b = props.booking
     form.value = {
-      clientName: b.clientName,
-      clientPhone: b.clientPhone.replace(/^\+998\s*/, ''),
-      fieldId: b.fieldId,
+      customerName: b.customerName,
+      customerPhone: (b.customerPhone || '').replace(/^\+998\s*/, ''),
+      fieldId: Number(b.fieldId),
       date: b.date,
       startTime: b.startTime,
       durationMin: b.durationMin,
@@ -357,9 +360,9 @@ function resetForm() {
     }
   } else {
     form.value = {
-      clientName: '',
-      clientPhone: '',
-      fieldId: props.fieldId ?? fields.value[0]?.id ?? '',
+      customerName: '',
+      customerPhone: '',
+      fieldId: (props.fieldId !== undefined && props.fieldId !== '' ? Number(props.fieldId) : (fields.value[0]?.id ?? '')) as number | '',
       date: props.defaultDate ?? dayjs().format('YYYY-MM-DD'),
       startTime: props.defaultTime || `${String((stadiumsStore.activeStadium?.workStart ?? 6) + 12).padStart(2, '0')}:00`,
       durationMin: 60,
@@ -410,7 +413,7 @@ const conflict = computed(() => {
 })
 
 const canSave = computed(() =>
-  !!form.value.clientName.trim() && !!form.value.fieldId && !!form.value.date && !!form.value.startTime
+  !!form.value.customerName.trim() && !!form.value.fieldId && !!form.value.date && !!form.value.startTime
 )
 
 function selectDuration(mins: number) {
@@ -435,46 +438,49 @@ function inputBox(active: any, center = false) {
           ${center ? 'justify-content:center;' : ''}`
 }
 
-function save() {
-  if (!canSave.value || conflict.value) return
-  const phone = form.value.clientPhone.trim()
-    ? '+998' + form.value.clientPhone.replace(/\s+/g, '')
-    : 'unknown'
-  const client = clientsStore.upsert(form.value.clientName.trim(), phone)
-  const stadiumId = stadiumsStore.activeStadiumId
+async function save() {
+  if (!canSave.value || conflict.value || saving.value) return
+  saving.value = true
+  serverError.value = ''
+  const phone = form.value.customerPhone.trim()
+    ? '+998' + form.value.customerPhone.replace(/\s+/g, '')
+    : ''
 
-  if (isEdit.value && props.booking) {
-    bookingsStore.updateBooking(props.booking.id, {
-      clientId: client.id,
-      clientName: form.value.clientName.trim(),
-      clientPhone: phone,
-      fieldId: form.value.fieldId,
-      stadiumId,
-      date: form.value.date,
-      startTime: form.value.startTime,
-      endTime: endTime.value,
-      durationMin: form.value.durationMin,
-      price: form.value.price,
-      notes: form.value.notes,
-    })
-  } else {
-    bookingsStore.addBooking({
-      clientId: client.id,
-      clientName: form.value.clientName.trim(),
-      clientPhone: phone,
-      fieldId: form.value.fieldId,
-      stadiumId,
-      date: form.value.date,
-      startTime: form.value.startTime,
-      endTime: endTime.value,
-      durationMin: form.value.durationMin,
-      price: form.value.price,
-      paymentStatus: 'unpaid',
-      status: 'active',
-      notes: form.value.notes,
-    })
+  try {
+    if (isEdit.value && props.booking) {
+      await bookingsStore.updateBooking(props.booking.id, {
+        customerName: form.value.customerName.trim(),
+        customerPhone: phone,
+        date: form.value.date,
+        startTime: form.value.startTime,
+        endTime: endTime.value,
+        notes: form.value.notes,
+      })
+    } else {
+      await bookingsStore.createBooking({
+        fieldId: Number(form.value.fieldId),
+        customerName: form.value.customerName.trim(),
+        customerPhone: phone,
+        date: form.value.date,
+        startTime: form.value.startTime,
+        endTime: endTime.value,
+        isPaid: false,
+        notes: form.value.notes || null,
+        price: form.value.price,
+      })
+    }
+    emit('saved')
+  } catch (e: any) {
+    if (e?.status === 409) {
+      serverError.value = e?.message || 'Bu vaqt band'
+    } else if (e?.status === 0) {
+      serverError.value = 'Internet ulanmagan'
+    } else {
+      serverError.value = e?.message || 'Saqlashda xato'
+    }
+  } finally {
+    saving.value = false
   }
-  emit('saved')
 }
 </script>
 

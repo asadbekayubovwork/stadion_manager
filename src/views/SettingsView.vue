@@ -380,17 +380,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useStadiumsStore } from '../stores/stadiums'
 import { useAuthStore } from '../stores/auth'
-import type { Field, Stadium } from '../types'
+import { useBookingsStore } from '../stores/bookings'
+import { useClientsStore } from '../stores/clients'
+import type { Field } from '../types'
 
 const { locale } = useI18n()
 const router = useRouter()
 const stadiumsStore = useStadiumsStore()
 const auth = useAuthStore()
+const bookingsStore = useBookingsStore()
+const clientsStore = useClientsStore()
+
+onMounted(() => {
+  if (!stadiumsStore.loaded) stadiumsStore.loadAll().catch(() => {})
+})
 
 const langs = [
   { key: 'uz', label: "O'zbek (lotin)" },
@@ -404,6 +412,7 @@ const langModalOpen = ref(false)
 function setLang(lang: string) {
   locale.value = lang as any
   localStorage.setItem('sm_lang', lang)
+  stadiumsStore.updateStadiumSettings({ language: lang }).catch(() => {})
 }
 
 const userInitials = computed(() => {
@@ -417,7 +426,7 @@ const userInitials = computed(() => {
 const activeStadium = computed(() => stadiumsStore.activeStadium)
 const activeStadiumId = computed(() => stadiumsStore.activeStadiumId)
 
-const allFields = computed<(Field & { stadiumId: string })[]>(() =>
+const allFields = computed<(Field & { stadiumId: number })[]>(() =>
   stadiumsStore.stadiums.flatMap(s =>
     s.fields.map(f => ({ ...f, stadiumId: s.id }))
   )
@@ -442,50 +451,66 @@ const workHoursLabel = computed(() => {
 function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') }
 
 // Stadium modal
-interface StadiumForm { id?: string; name: string; workStart: number; workEnd: number }
+interface StadiumForm { id?: number; name: string; workStart: number; workEnd: number }
 const stadiumModal = ref<StadiumForm | null>(null)
-function openEditStadium(s: Stadium | undefined) {
+const savingStadium = ref(false)
+function openEditStadium(s: { id: number; name: string; workStart: number; workEnd: number } | null | undefined) {
   if (!s) return
   stadiumModal.value = { id: s.id, name: s.name, workStart: s.workStart, workEnd: s.workEnd }
 }
-function saveStadium() {
+async function saveStadium() {
   if (!stadiumModal.value) return
-  if (stadiumModal.value.id) {
-    stadiumsStore.updateStadium(stadiumModal.value.id, {
+  savingStadium.value = true
+  try {
+    await stadiumsStore.updateStadiumSettings({
       name: stadiumModal.value.name,
-      workStart: stadiumModal.value.workStart,
-      workEnd: stadiumModal.value.workEnd,
+      workStartHour: stadiumModal.value.workStart,
+      workEndHour: stadiumModal.value.workEnd,
     })
+    stadiumModal.value = null
+  } catch (e: any) {
+    alert(e?.message || 'Saqlashda xato')
+  } finally {
+    savingStadium.value = false
   }
-  stadiumModal.value = null
 }
 
 // Field modal
-interface FieldForm { id?: string; stadiumId: string; name: string; pricePerHour: number }
+interface FieldForm { id?: number; stadiumId: number; name: string; pricePerHour: number }
 const fieldModal = ref<FieldForm | null>(null)
-function openAddField(stadiumId: string) {
-  if (!stadiumId) return
-  fieldModal.value = { stadiumId, name: '', pricePerHour: 200000 }
+const savingField = ref(false)
+function openAddField(stadiumId: number | string) {
+  fieldModal.value = { stadiumId: Number(stadiumId) || 1, name: '', pricePerHour: 200000 }
 }
-function openEditField(stadiumId: string, f: Field) {
-  fieldModal.value = { id: f.id, stadiumId, name: f.name, pricePerHour: f.pricePerHour }
+function openEditField(stadiumId: number | string, f: Field) {
+  fieldModal.value = { id: f.id, stadiumId: Number(stadiumId) || 1, name: f.name, pricePerHour: f.pricePerHour }
 }
-function saveField() {
+async function saveField() {
   if (!fieldModal.value?.name) return
-  if (fieldModal.value.id) {
-    stadiumsStore.updateField(fieldModal.value.stadiumId, fieldModal.value.id, {
-      name: fieldModal.value.name,
-      pricePerHour: fieldModal.value.pricePerHour,
-    })
-  } else {
-    stadiumsStore.addField(fieldModal.value.stadiumId, fieldModal.value.name, fieldModal.value.pricePerHour)
-  }
-  fieldModal.value = null
-}
-function deleteField(stadiumId: string, fieldId: string) {
-  if (confirm('Maydonni o\'chirishni tasdiqlaysizmi?')) {
-    stadiumsStore.deleteField(stadiumId, fieldId)
+  savingField.value = true
+  try {
+    if (fieldModal.value.id) {
+      await stadiumsStore.updateField(fieldModal.value.stadiumId, fieldModal.value.id, {
+        name: fieldModal.value.name,
+        pricePerHour: fieldModal.value.pricePerHour,
+      })
+    } else {
+      await stadiumsStore.addField(fieldModal.value.stadiumId, fieldModal.value.name, fieldModal.value.pricePerHour)
+    }
     fieldModal.value = null
+  } catch (e: any) {
+    alert(e?.message || 'Saqlashda xato')
+  } finally {
+    savingField.value = false
+  }
+}
+async function deleteField(stadiumId: number | string, fieldId: number) {
+  if (!confirm("Maydonni o'chirishni tasdiqlaysizmi?")) return
+  try {
+    await stadiumsStore.deleteField(Number(stadiumId) || 1, fieldId)
+    fieldModal.value = null
+  } catch (e: any) {
+    alert(e?.message || "O'chirishda xato")
   }
 }
 
@@ -498,6 +523,9 @@ function openPriceModal() {
 function logout() {
   if (confirm('Tizimdan chiqishni tasdiqlaysizmi?')) {
     auth.logout()
+    stadiumsStore.reset()
+    bookingsStore.reset()
+    clientsStore.reset()
     router.push({ name: 'login' })
   }
 }

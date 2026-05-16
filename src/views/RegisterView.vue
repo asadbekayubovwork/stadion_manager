@@ -12,11 +12,11 @@
 
       <div class="pt-6">
         <h1 style="font-size:30px; font-weight:700; color:#0f172a; letter-spacing:-0.75px; line-height:36px; margin:0;">
-          Ro'yxatdan o'tish
+          {{ t('auth.registerTitle') }}
         </h1>
       </div>
       <p style="font-size:16px; font-weight:400; color:#64748b; line-height:24px; margin:0;">
-        Yangi hisob yarating
+        {{ t('auth.registerSubtitle') }}
       </p>
     </div>
 
@@ -28,7 +28,7 @@
 
       <!-- Full name -->
       <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
-        To'liq ism
+        {{ t('auth.fullName') }}
       </label>
       <div
         class="flex items-center bg-white"
@@ -44,7 +44,7 @@
         <input
           v-model="name"
           type="text"
-          placeholder="Alisher Umarov"
+          :placeholder="t('auth.fullNamePlaceholder')"
           class="w-full bg-transparent outline-none"
           style="font-size:18px; font-weight:500; color:#0f172a; border:none; padding-left:12px;"
           @focus="focusedName = true"
@@ -54,7 +54,7 @@
 
       <!-- Phone -->
       <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
-        Telefon raqam
+        {{ t('auth.phoneLabel') }}
       </label>
       <div
         class="flex items-center bg-white rounded-2xl transition-shadow"
@@ -63,12 +63,7 @@
           ? 'border: 1px solid rgba(22,163,74,0.8); box-shadow: 0px 0px 0px 4px rgba(22,163,74,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1);'
           : 'border: 1px solid rgba(22,163,74,0.5); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'"
       >
-        <div class="flex items-center flex-shrink-0" style="padding-right:17px; border-right: 1px solid rgba(226,232,240,0.7); gap:8px;">
-          <div class="overflow-hidden flex-shrink-0" style="width:24px; height:16px; border-radius:12px; border:1px solid #e2e8f0;">
-            <div style="height:5.25px; background:#0099b5;" />
-            <div style="height:3.5px; background:#ffffff;" />
-            <div style="height:5.25px; background:#1eb53a;" />
-          </div>
+        <div class="flex items-center flex-shrink-0" style="padding-right:17px; border-right: 1px solid rgba(226,232,240,0.7);">
           <span style="font-size:18px; font-weight:600; color:#0f172a; letter-spacing:0.45px; line-height:28px; white-space:nowrap;">
             +998
           </span>
@@ -91,7 +86,7 @@
 
       <!-- Password -->
       <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
-        Parol
+        {{ t('auth.password') }}
       </label>
       <div
         class="flex items-center bg-white"
@@ -107,7 +102,7 @@
         <input
           v-model="password"
           :type="showPassword ? 'text' : 'password'"
-          placeholder="Kamida 4 ta belgi"
+          :placeholder="t('auth.atLeast4')"
           class="w-full bg-transparent outline-none"
           style="font-size:18px; font-weight:500; color:#0f172a; letter-spacing:0.5px; line-height:28px; border:none; padding-left:12px;"
           @focus="focusedPassword = true"
@@ -132,7 +127,7 @@
 
       <!-- Confirm password -->
       <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
-        Parolni tasdiqlang
+        {{ t('auth.confirmPassword') }}
       </label>
       <div
         class="flex items-center bg-white"
@@ -152,7 +147,7 @@
         <input
           v-model="passwordConfirm"
           :type="showPassword ? 'text' : 'password'"
-          placeholder="Parolni qayta kiriting"
+          :placeholder="t('auth.confirmPasswordPlaceholder')"
           class="w-full bg-transparent outline-none"
           style="font-size:18px; font-weight:500; color:#0f172a; letter-spacing:0.5px; line-height:28px; border:none; padding-left:12px;"
           @focus="focusedConfirm = true"
@@ -174,15 +169,7 @@
         v-if="confirmTouched && passwordConfirm.length > 0 && !passwordsMatch"
         style="font-size:12px; font-weight:500; color:#f43f5e; margin:0; padding-left:2px;"
       >
-        Parollar mos kelmadi
-      </p>
-
-      <!-- Server error -->
-      <p
-        v-if="errorMsg"
-        style="font-size:13px; font-weight:500; color:#f43f5e; margin:0; padding-left:2px;"
-      >
-        {{ errorMsg }}
+        {{ t('auth.passwordMismatch') }}
       </p>
 
     </div>
@@ -206,7 +193,7 @@
           style="font-size:17px; font-weight:600; line-height:25.5px;"
           :style="(isValid && !loading) ? 'color:#ffffff;' : 'color:#94a3b8;'"
         >
-          {{ loading ? "Yaratilmoqda…" : "Ro'yxatdan o'tish" }}
+          {{ loading ? t('auth.creating') : t('auth.register') }}
         </span>
         <svg
           v-if="isValid && !loading"
@@ -222,14 +209,14 @@
       <!-- Back to login -->
       <div class="flex items-center justify-center" style="gap:6px;">
         <span style="font-size:14px; font-weight:500; color:#64748b; line-height:20px;">
-          Hisobingiz bormi?
+          {{ t('auth.haveAccount') }}
         </span>
         <button
           type="button"
           @click="router.push({ name: 'login' })"
           style="background:transparent; border:none; cursor:pointer; padding:0; font-size:14px; font-weight:700; color:#16a34a; line-height:20px;"
         >
-          ← Kirish
+          {{ t('auth.backToLogin') }}
         </button>
       </div>
     </div>
@@ -240,13 +227,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useStadiumsStore } from '../stores/stadiums'
 import { ApiError } from '../api/http'
+import { useToast, extractApiErrorMessage } from '../composables/useToast'
 
 const router = useRouter()
+const { t } = useI18n()
 const auth = useAuthStore()
 const stadiumsStore = useStadiumsStore()
+const toast = useToast()
 
 const name = ref('')
 const phone = ref('')
@@ -260,7 +251,6 @@ const focusedConfirm = ref(false)
 const confirmTouched = ref(false)
 const showPassword = ref(false)
 const loading = ref(false)
-const errorMsg = ref('')
 
 const tg = (window as any).Telegram?.WebApp
 
@@ -296,23 +286,23 @@ function formatPhone(e: Event) {
 async function onRegister() {
   if (!isValid.value || loading.value) return
   loading.value = true
-  errorMsg.value = ''
   try {
     await auth.register(name.value.trim(), '+998' + digits.value, password.value)
     await stadiumsStore.loadAll()
+    toast.success(t('auth.registerSuccess'))
     router.push({ name: 'onboarding' })
   } catch (e) {
+    let msg = t('common.errorGeneric')
     if (e instanceof ApiError) {
-      if (e.status === 409 || e.status === 400) {
-        errorMsg.value = e.message || "Bu telefon allaqachon ro'yxatdan o'tgan"
-      } else if (e.status === 0) {
-        errorMsg.value = 'Internet ulanmagan'
+      if (e.status === 0) {
+        msg = t('common.internetOff')
+      } else if (e.status === 409 || e.status === 400) {
+        msg = extractApiErrorMessage(e.data, t('auth.phoneAlreadyRegistered'))
       } else {
-        errorMsg.value = e.message || 'Xatolik yuz berdi'
+        msg = extractApiErrorMessage(e.data, e.message || t('common.errorGeneric'))
       }
-    } else {
-      errorMsg.value = 'Xatolik yuz berdi'
     }
+    toast.error(msg)
   } finally {
     loading.value = false
   }

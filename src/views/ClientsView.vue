@@ -6,14 +6,14 @@
       style="background:#ffffff; border-bottom:1px solid #e2e8f0; padding:14px 16px;
              display:flex; align-items:center; justify-content:space-between;"
     >
-      <div style="font-size:22px; font-weight:900; color:#0f172a;">Mijozlar</div>
+      <div style="font-size:22px; font-weight:900; color:#0f172a;">{{ t('clients.title') }}</div>
       <div
         style="background:#dcfce7; padding:4px 12px; border-radius:100px;
                display:flex; align-items:center; gap:4px;"
       >
         <span style="font-size:14px; font-weight:800; color:#14532d;
                      font-family:'Inter', sans-serif;">{{ totalClients }}</span>
-        <span style="font-size:11px; color:#16a34a; font-weight:600;">jami</span>
+        <span style="font-size:11px; color:#16a34a; font-weight:600;">{{ t('clients.totalSuffix') }}</span>
       </div>
     </div>
 
@@ -32,7 +32,7 @@
         <input
           v-model="query"
           type="search"
-          placeholder="Ism yoki telefon bo'yicha..."
+          :placeholder="t('clients.searchPlaceholder')"
           style="flex:1; outline:none; background:transparent; border:none;
                  font-size:14px; font-weight:500; color:#0f172a; min-width:0;"
         />
@@ -43,13 +43,13 @@
         style="font-size:11px; font-weight:700; color:#94a3b8;
                text-transform:uppercase; letter-spacing:0.6px; margin:18px 0 10px;"
       >
-        Ko'p qaytuvchi mijozlar
+        {{ t('clients.frequent') }}
       </div>
 
       <!-- Client list -->
       <div v-if="enriched.length === 0"
            style="text-align:center; padding:40px 0; color:#94a3b8; font-size:14px;">
-        Mijozlar yo'q
+        {{ t('clients.noClients') }}
       </div>
 
       <div v-else style="display:flex; flex-direction:column; gap:10px;">
@@ -89,7 +89,7 @@
               {{ formatMoney(c.totalSpent) }}
             </div>
             <div style="font-size:11px; color:#94a3b8; font-weight:600; margin-top:2px;">
-              {{ c.visits }} tashrif
+              {{ c.visits }} {{ t('clients.visits') }}
             </div>
           </div>
         </div>
@@ -101,10 +101,12 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useClientsStore } from '../stores/clients'
 import { useBookingsStore } from '../stores/bookings'
 
 const router = useRouter()
+const { t } = useI18n()
 const clientsStore = useClientsStore()
 const bookingsStore = useBookingsStore()
 const query = ref('')

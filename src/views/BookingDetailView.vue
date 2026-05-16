@@ -22,7 +22,7 @@
         </svg>
       </button>
       <div style="flex:1;">
-        <div style="font-size:17px; font-weight:900; color:#0f172a;">Bron tafsiloti</div>
+        <div style="font-size:17px; font-weight:900; color:#0f172a;">{{ t('booking.detailTitle') }}</div>
       </div>
       <button
         @click="onEdit"
@@ -52,7 +52,7 @@
                  background:rgba(255,255,255,0.2); margin-bottom:12px;"
         >
           <span style="font-size:12px; color:#ffffff; font-weight:700;">
-            {{ booking.paymentStatus === 'paid' ? "To'langan" : "To'lanmagan" }} · {{ fieldName }}
+            {{ booking.paymentStatus === 'paid' ? t('booking.paid') : t('booking.unpaid') }} · {{ fieldName }}
           </span>
         </div>
         <div style="font-size:32px; font-weight:900; color:#ffffff;
@@ -97,7 +97,7 @@
                box-shadow:0 2px 8px rgba(15,23,42,0.08); margin-bottom:16px;"
       >
         <div style="font-size:13px; font-weight:800; color:#0f172a; margin-bottom:10px;">
-          Mijoz tarixi
+          {{ t('booking.clientHistory') }}
         </div>
         <div
           v-for="(h, i) in clientHistory"
@@ -113,7 +113,7 @@
               ? 'padding:2px 8px; border-radius:6px; background:#dcfce7; font-size:11px; font-weight:700; color:#14532d;'
               : 'padding:2px 8px; border-radius:6px; background:#fff7ed; font-size:11px; font-weight:700; color:#9a3412;'"
           >
-            {{ h.paymentStatus === 'paid' ? "To'langan" : "To'lanmagan" }}
+            {{ h.paymentStatus === 'paid' ? t('booking.paid') : t('booking.unpaid') }}
           </div>
         </div>
       </div>
@@ -131,7 +131,7 @@
                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
-          <span style="font-size:15px; font-weight:800; color:#ffffff;">To'landi ✓</span>
+          <span style="font-size:15px; font-weight:800; color:#ffffff;">{{ t('booking.markPaidBtn') }}</span>
         </button>
         <button
           v-else
@@ -144,7 +144,7 @@
                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"/>
           </svg>
-          <span style="font-size:15px; font-weight:800; color:#16a34a;">To'langan</span>
+          <span style="font-size:15px; font-weight:800; color:#16a34a;">{{ t('booking.paid') }}</span>
         </button>
         <button
           @click="onCancel"
@@ -159,7 +159,7 @@
             <path d="M10 11v6M14 11v6"/>
             <path d="M9 6V4h6v2"/>
           </svg>
-          <span style="font-size:14px; font-weight:700; color:#ef4444;">Bekor</span>
+          <span style="font-size:14px; font-weight:700; color:#ef4444;">{{ t('booking.cancelBtn') }}</span>
         </button>
       </div>
     </div>
@@ -182,13 +182,13 @@
     class="flex items-center justify-center"
     style="min-height:100%; padding:40px; flex-direction:column; gap:12px;"
   >
-    <div style="font-size:16px; color:#94a3b8;">Bron topilmadi</div>
+    <div style="font-size:16px; color:#94a3b8;">{{ t('booking.notFound') }}</div>
     <button
       @click="router.push({ name: 'schedule' })"
       style="padding:12px 24px; border-radius:12px; background:#16a34a; color:#ffffff;
              font-size:14px; font-weight:700; border:none; cursor:pointer;"
     >
-      Jadvalga qaytish
+      {{ t('booking.backToSchedule') }}
     </button>
   </div>
 </template>
@@ -196,15 +196,19 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useBookingsStore } from '../stores/bookings'
 import { useStadiumsStore } from '../stores/stadiums'
+import { useToast, extractApiErrorMessage } from '../composables/useToast'
 import dayjs from 'dayjs'
 import BookingModal from '../components/booking/BookingModal.vue'
 
 const router = useRouter()
 const route = useRoute()
+const { t, tm, rt } = useI18n()
 const bookingsStore = useBookingsStore()
 const stadiumsStore = useStadiumsStore()
+const toast = useToast()
 
 const showEdit = ref(false)
 
@@ -247,18 +251,17 @@ const heroShadow = computed(() =>
   booking.value?.paymentStatus === 'paid' ? 'rgba(22,163,74,0.33)' : 'rgba(249,115,22,0.33)'
 )
 
-const WEEKDAYS_UZ = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba']
-const MONTHS_UZ = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr']
-const MONTHS_UZ_SHORT = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek']
-
 function formatFullDate(dateStr: string) {
   const d = dayjs(dateStr)
-  return `${d.date()} ${MONTHS_UZ[d.month()]}, ${WEEKDAYS_UZ[d.day()]}`
+  const months = tm('date.months') as unknown as any[]
+  const weekdays = tm('date.weekdays') as unknown as any[]
+  return `${d.date()} ${rt(months[d.month()])}, ${rt(weekdays[d.day()]).toLowerCase()}`
 }
 
 function formatShortDate(dateStr: string) {
   const d = dayjs(dateStr)
-  return `${d.date()} ${MONTHS_UZ_SHORT[d.month()]}`
+  const monthsShort = tm('date.monthsShort') as unknown as any[]
+  return `${d.date()} ${rt(monthsShort[d.month()])}`
 }
 
 function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') }
@@ -266,20 +269,22 @@ function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g,
 function formatDuration(min: number) {
   const h = Math.floor(min / 60)
   const m = min % 60
-  if (h && m) return `${h} soat ${m} daq`
-  if (h) return `${h} soat`
-  return `${m} daq`
+  const hourLbl = t('booking.hour')
+  const minLbl = t('booking.minute')
+  if (h && m) return `${h} ${hourLbl} ${m} ${minLbl}`
+  if (h) return `${h} ${hourLbl}`
+  return `${m} ${minLbl}`
 }
 
 const infoRows = computed(() => {
   const b = booking.value
   if (!b) return []
   const rows = [
-    { label: 'Sana', value: formatFullDate(b.date), mono: false },
-    { label: 'Davomiylik', value: formatDuration(b.durationMin), mono: false },
-    { label: 'Narx', value: `${formatMoney(b.price)} so'm`, mono: true },
+    { label: t('booking.date'), value: formatFullDate(b.date), mono: false },
+    { label: t('booking.duration'), value: formatDuration(b.durationMin), mono: false },
+    { label: t('booking.priceLabel'), value: `${formatMoney(b.price)} ${t('common.soum')}`, mono: true },
   ]
-  if (b.notes) rows.push({ label: 'Izoh', value: b.notes, mono: false })
+  if (b.notes) rows.push({ label: t('booking.notes'), value: b.notes, mono: false })
   return rows
 })
 
@@ -298,18 +303,23 @@ const clientHistory = computed(() => {
 
 async function onMarkPaid() {
   if (!booking.value) return
-  try { await bookingsStore.markPaid(booking.value.id, 'cash') }
-  catch (e: any) { alert(e?.message || 'Xato') }
+  try {
+    await bookingsStore.markPaid(booking.value.id, 'cash')
+    toast.success(t('booking.paymentRecorded'))
+  } catch (e: any) {
+    toast.error(extractApiErrorMessage(e?.data, e?.message || t('common.errorGeneric')))
+  }
 }
 
 async function onCancel() {
   if (!booking.value) return
-  if (!confirm('Bronni bekor qilishni tasdiqlaysizmi?')) return
+  if (!confirm(t('booking.confirmCancel'))) return
   try {
     await bookingsStore.cancelBooking(booking.value.id)
+    toast.success(t('booking.cancelled'))
     router.back()
   } catch (e: any) {
-    alert(e?.message || 'Xato')
+    toast.error(extractApiErrorMessage(e?.data, e?.message || t('common.errorGeneric')))
   }
 }
 

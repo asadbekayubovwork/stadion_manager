@@ -9,7 +9,7 @@
       <div>
         <div style="font-size:13px; color:#475569; font-weight:500;">{{ todayLabel }}</div>
         <div style="font-size:20px; font-weight:900; color:#0f172a; margin-top:2px;">
-          Assalomu alaykum 👋
+          {{ t('home.greetingHello') }}
         </div>
       </div>
       <div
@@ -34,13 +34,13 @@
         >
           <div style="font-size:11px; color:rgba(255,255,255,0.8); font-weight:600;
                       letter-spacing:0.5px; text-transform:uppercase;">
-            Bugungi daromad
+            {{ t('home.todayRevenue') }}
           </div>
           <div style="font-size:22px; font-weight:900; color:#ffffff; margin-top:4px;
                       font-family:'Inter', sans-serif;">
             {{ formatMoney(revenue) }}
           </div>
-          <div style="font-size:12px; color:rgba(255,255,255,0.7); font-weight:600;">so'm</div>
+          <div style="font-size:12px; color:rgba(255,255,255,0.7); font-weight:600;">{{ t('common.soum') }}</div>
           <div style="display:flex; align-items:center; gap:4px; margin-top:8px;">
             <svg v-if="revenueDeltaPct >= 0" width="14" height="14" viewBox="0 0 24 24" fill="none"
                  stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -53,7 +53,7 @@
               <polyline points="19 12 12 19 5 12"/>
             </svg>
             <span style="font-size:12px; color:rgba(255,255,255,0.9); font-weight:700;">
-              {{ revenueDeltaPct >= 0 ? '+' : '' }}{{ revenueDeltaPct }}% kecha
+              {{ revenueDeltaPct >= 0 ? '+' : '' }}{{ revenueDeltaPct }}% {{ t('home.yesterday') }}
             </span>
           </div>
         </div>
@@ -64,28 +64,28 @@
                       box-shadow:0 2px 8px rgba(15,23,42,0.08);">
             <div style="font-size:10px; color:#94a3b8; font-weight:600;
                         text-transform:uppercase; letter-spacing:0.4px;">
-              Bronlar
+              {{ t('home.bookings') }}
             </div>
             <div style="font-size:20px; font-weight:900; color:#0f172a;
                         font-family:'Inter', sans-serif;">
               {{ todayBookingsCount }}
             </div>
             <div style="font-size:11px; color:#f97316; font-weight:700;">
-              {{ todayUnpaidCount }} to'lanmagan
+              {{ todayUnpaidCount }} {{ t('home.unpaidShort') }}
             </div>
           </div>
           <div style="background:#ffffff; border-radius:14px; padding:12px 14px;
                       box-shadow:0 2px 8px rgba(15,23,42,0.08);">
             <div style="font-size:10px; color:#94a3b8; font-weight:600;
                         text-transform:uppercase; letter-spacing:0.4px;">
-              Band saatlar
+              {{ t('home.busyHours') }}
             </div>
             <div style="font-size:20px; font-weight:900; color:#0f172a;
                         font-family:'Inter', sans-serif;">
               {{ bookedHours }}/{{ totalHours }}
             </div>
             <div style="font-size:11px; color:#16a34a; font-weight:700;">
-              {{ totalHours - bookedHours }} bo'sh
+              {{ totalHours - bookedHours }} {{ t('home.freeShort') }}
             </div>
           </div>
         </div>
@@ -97,13 +97,13 @@
                box-shadow:0 2px 8px rgba(15,23,42,0.08); margin-bottom:16px;"
       >
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <div style="font-size:15px; font-weight:800; color:#0f172a;">Bugungi jadval</div>
+          <div style="font-size:15px; font-weight:800; color:#0f172a;">{{ t('home.todaySchedule') }}</div>
           <button
             @click="router.push('/schedule')"
             style="background:none; border:none; cursor:pointer; padding:0;
                    font-size:13px; color:#16a34a; font-weight:700;"
           >
-            Hammasi →
+            {{ t('home.seeAll') }}
           </button>
         </div>
         <div style="display:flex; gap:3px; height:24px; border-radius:8px; overflow:hidden;">
@@ -123,11 +123,11 @@
       <!-- Upcoming bookings -->
       <div>
         <div style="font-size:15px; font-weight:800; color:#0f172a; margin-bottom:10px;">
-          Yaqindagi bronlar
+          {{ t('home.upcoming') }}
         </div>
         <div v-if="upcoming.length === 0"
              style="font-size:14px; color:#94a3b8; text-align:center; padding:16px 0;">
-          Bugun bron yo'q
+          {{ t('home.noUpcoming') }}
         </div>
         <div v-else style="display:flex; flex-direction:column; gap:8px;">
           <div
@@ -159,7 +159,7 @@
                   ? 'font-size:11px; font-weight:800; color:#14532d;'
                   : 'font-size:11px; font-weight:800; color:#9a3412;'"
               >
-                {{ b.paymentStatus === 'paid' ? "To'langan" : "To'liq emas" }}
+                {{ b.paymentStatus === 'paid' ? t('home.paidBadge') : t('home.partialBadge') }}
               </span>
             </div>
           </div>
@@ -173,6 +173,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useBookingsStore } from '../stores/bookings'
 import { useStadiumsStore } from '../stores/stadiums'
@@ -182,6 +183,7 @@ import type { DashboardData } from '../types'
 import dayjs from 'dayjs'
 
 const router = useRouter()
+const { t, tm, rt } = useI18n()
 const auth = useAuthStore()
 const bookingsStore = useBookingsStore()
 const stadiumsStore = useStadiumsStore()
@@ -208,12 +210,11 @@ onMounted(async () => {
   ])
 })
 
-const WEEKDAYS_UZ = ['Yakshanba', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba']
-const MONTHS_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr']
-
 const todayLabel = computed(() => {
   const d = dayjs()
-  return `${WEEKDAYS_UZ[d.day()]}, ${d.date()} ${MONTHS_UZ[d.month()]} ${d.year()}`
+  const weekdays = tm('date.weekdays') as unknown as any[]
+  const months = tm('date.months') as unknown as any[]
+  return `${rt(weekdays[d.day()])}, ${d.date()} ${rt(months[d.month()])} ${d.year()}`
 })
 
 const userInitial = computed(() => auth.user?.name?.trim().charAt(0).toUpperCase() || 'A')

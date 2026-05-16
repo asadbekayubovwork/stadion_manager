@@ -11,11 +11,11 @@
 
       <div class="pt-6">
         <h1 style="font-size:30px; font-weight:700; color:#0f172a; letter-spacing:-0.75px; line-height:36px; margin:0;">
-          Profilni sozlang
+          {{ t('auth.onboardingTitle') }}
         </h1>
       </div>
       <p style="font-size:16px; font-weight:400; color:#64748b; line-height:24px; margin:0;">
-        Davom etish uchun bir necha ma'lumot kiriting
+        {{ t('auth.onboardingSubtitle') }}
       </p>
     </div>
 
@@ -25,7 +25,7 @@
       <!-- Ism -->
       <div class="flex flex-col" style="gap: 8px;">
         <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
-          Sizning ismingiz
+          {{ t('auth.yourName') }}
         </label>
         <div
           class="flex items-center bg-white"
@@ -39,7 +39,7 @@
           <input
             v-model="name"
             type="text"
-            placeholder="Sardor Toshmatov"
+            :placeholder="t('auth.yourNamePlaceholder')"
             class="w-full bg-transparent outline-none"
             style="font-size:18px; font-weight:500; color:#0f172a; border:none;"
             @focus="focusedName = true"
@@ -51,7 +51,7 @@
       <!-- Stadion nomi -->
       <div class="flex flex-col" style="gap: 8px;">
         <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
-          Stadion nomi
+          {{ t('auth.stadiumNameLabel') }}
         </label>
         <div
           class="flex items-center bg-white"
@@ -65,7 +65,7 @@
           <input
             v-model="stadiumName"
             type="text"
-            placeholder="Hamza Stadion"
+            :placeholder="t('auth.stadiumNamePlaceholder')"
             class="w-full bg-transparent outline-none"
             style="font-size:18px; font-weight:500; color:#0f172a; border:none;"
             @focus="focusedStadium = true"
@@ -77,8 +77,8 @@
       <!-- Maydonlar -->
       <div class="flex flex-col" style="gap: 12px;">
         <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px;">
-          Maydonlar
-          <span style="font-weight:400; color:#94a3b8;"> (ixtiyoriy)</span>
+          {{ t('auth.fieldsLabel') }}
+          <span style="font-weight:400; color:#94a3b8;"> {{ t('auth.fieldsOptional') }}</span>
         </label>
 
         <!-- Field rows -->
@@ -96,7 +96,7 @@
             <input
               v-model="field.name"
               type="text"
-              :placeholder="`${i + 1}-Maydon`"
+              :placeholder="t('auth.fieldPlaceholder', { n: i + 1 })"
               class="w-full bg-transparent outline-none"
               style="font-size:15px; font-weight:500; color:#0f172a; border:none;"
             />
@@ -115,7 +115,7 @@
               class="w-full bg-transparent outline-none"
               style="font-size:14px; font-weight:500; color:#0f172a; border:none; min-width:0;"
             />
-            <span style="font-size:11px; font-weight:500; color:#94a3b8; flex-shrink:0;">so'm</span>
+            <span style="font-size:11px; font-weight:500; color:#94a3b8; flex-shrink:0;">{{ t('common.soum') }}</span>
           </div>
 
           <!-- O'chirish -->
@@ -134,7 +134,7 @@
           v-if="fields.length > 0"
           style="font-size:12px; color:#94a3b8; margin:0; padding-left:2px; line-height:18px;"
         >
-          Soatlik narx so'mda. Keyinchalik sozlamalardan o'zgartirishingiz mumkin.
+          {{ t('auth.priceNote') }}
         </p>
 
         <!-- Maydon qo'shish tugmasi -->
@@ -146,7 +146,7 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round">
             <path d="M12 5v14M5 12h14"/>
           </svg>
-          <span style="font-size:14px; font-weight:600; color:#16a34a;">Maydon qo'shish</span>
+          <span style="font-size:14px; font-weight:600; color:#16a34a;">{{ t('auth.addField') }}</span>
         </button>
       </div>
 
@@ -158,12 +158,6 @@
       style="padding-top:16px; backdrop-filter: blur(8px); background: rgba(248,250,252,0.92); border-top: 1px solid rgba(226,232,240,0.6);"
       :style="{ paddingBottom: buttonBottomPad }"
     >
-      <p
-        v-if="errorMsg"
-        style="font-size:13px; font-weight:500; color:#f43f5e; margin:0 0 8px; padding-left:2px;"
-      >
-        {{ errorMsg }}
-      </p>
       <button
         @click="save"
         :disabled="!isValid || loading"
@@ -177,7 +171,7 @@
           style="font-size:17px; font-weight:600; line-height:25.5px;"
           :style="(isValid && !loading) ? 'color:#ffffff;' : 'color:#94a3b8;'"
         >
-          {{ loading ? 'Saqlanmoqda…' : 'Saqlash va boshlash' }}
+          {{ loading ? t('common.saving') : t('auth.saveStart') }}
         </span>
         <svg
           v-if="isValid"
@@ -197,15 +191,18 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useStadiumsStore } from '../stores/stadiums'
 import { ApiError } from '../api/http'
+import { useToast, extractApiErrorMessage } from '../composables/useToast'
 
 const router = useRouter()
+const { t } = useI18n()
 const auth = useAuthStore()
 const stadiumsStore = useStadiumsStore()
+const toast = useToast()
 const loading = ref(false)
-const errorMsg = ref('')
 
 const tg = (window as any).Telegram?.WebApp
 
@@ -241,7 +238,6 @@ function removeField(i: number) {
 async function save() {
   if (!isValid.value || loading.value) return
   loading.value = true
-  errorMsg.value = ''
   try {
     if (auth.user) auth.updateProfile({ name: name.value.trim() })
     await stadiumsStore.updateStadiumSettings({
@@ -254,11 +250,13 @@ async function save() {
       await stadiumsStore.addField(1, f.name.trim(), Number(f.price) || 0)
     }
     await stadiumsStore.loadAll()
+    toast.success(t('auth.onboardingSaved'))
     router.push({ name: 'home' })
   } catch (e) {
-    errorMsg.value = e instanceof ApiError && e.message
-      ? e.message
-      : 'Saqlashda xato. Qayta urinib ko\'ring'
+    const msg = e instanceof ApiError
+      ? extractApiErrorMessage(e.data, e.message || t('auth.savingError'))
+      : t('auth.savingError')
+    toast.error(msg)
   } finally {
     loading.value = false
   }

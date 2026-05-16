@@ -7,7 +7,7 @@
              padding:14px 16px 20px; box-shadow:0 4px 16px rgba(22,163,74,0.25);"
     >
       <div style="font-size:18px; font-weight:900; color:#ffffff; margin-bottom:14px;">
-        Sozlamalar
+        {{ t('settings.title') }}
       </div>
       <div style="display:flex; align-items:center; gap:14px;">
         <div
@@ -20,7 +20,7 @@
         <div style="flex:1; min-width:0;">
           <div style="font-size:17px; font-weight:900; color:#ffffff;
                       overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-            {{ auth.user?.name || 'Foydalanuvchi' }}
+            {{ auth.user?.name || t('settings.user') }}
           </div>
           <div style="font-size:13px; color:rgba(255,255,255,0.85); font-weight:500;
                       margin-top:2px; font-family:'Inter', sans-serif;">
@@ -31,7 +31,7 @@
                    background:rgba(255,255,255,0.18); margin-top:6px;"
           >
             <span style="font-size:11px; color:#ffffff; font-weight:700;">
-              {{ totalFields }} maydon · Pro tarif
+              {{ t('settings.proPlanSuffix', { count: totalFields }) }}
             </span>
           </div>
         </div>
@@ -43,7 +43,7 @@
       <!-- MAYDONLAR -->
       <div style="font-size:11px; font-weight:700; color:#94a3b8;
                   text-transform:uppercase; letter-spacing:0.6px; margin:4px 0 10px 4px;">
-        Maydonlar
+        {{ t('settings.fieldsSection') }}
       </div>
       <div
         style="background:#ffffff; border-radius:14px; overflow:hidden;
@@ -70,7 +70,7 @@
           <div style="flex:1; min-width:0;">
             <div style="font-size:14px; font-weight:800; color:#0f172a;">{{ f.name }}</div>
             <div style="font-size:12px; color:#94a3b8; font-weight:500;">
-              {{ formatMoney(f.pricePerHour) }} so'm/soat
+              {{ t('settings.pricePerHour', { amount: formatMoney(f.pricePerHour) }) }}
             </div>
           </div>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
@@ -96,8 +96,8 @@
             </svg>
           </div>
           <div style="flex:1;">
-            <div style="font-size:14px; font-weight:800; color:#16a34a;">Maydon qo'shish</div>
-            <div style="font-size:12px; color:#94a3b8; font-weight:500;">Yangi maydon yaratish</div>
+            <div style="font-size:14px; font-weight:800; color:#16a34a;">{{ t('settings.addField') }}</div>
+            <div style="font-size:12px; color:#94a3b8; font-weight:500;">{{ t('settings.addFieldSub') }}</div>
           </div>
         </div>
       </div>
@@ -105,7 +105,7 @@
       <!-- NARX VA VAQT -->
       <div style="font-size:11px; font-weight:700; color:#94a3b8;
                   text-transform:uppercase; letter-spacing:0.6px; margin:4px 0 10px 4px;">
-        Narx va vaqt
+        {{ t('settings.priceTimeSection') }}
       </div>
       <div
         style="background:#ffffff; border-radius:14px; overflow:hidden;
@@ -127,7 +127,7 @@
             </svg>
           </div>
           <div style="flex:1;">
-            <div style="font-size:14px; font-weight:800; color:#0f172a;">Soatlik narx</div>
+            <div style="font-size:14px; font-weight:800; color:#0f172a;">{{ t('settings.hourlyPrice') }}</div>
             <div style="font-size:12px; color:#94a3b8; font-weight:500;">
               {{ avgPriceLabel }}
             </div>
@@ -153,7 +153,7 @@
             </svg>
           </div>
           <div style="flex:1;">
-            <div style="font-size:14px; font-weight:800; color:#0f172a;">Ish vaqti</div>
+            <div style="font-size:14px; font-weight:800; color:#0f172a;">{{ t('settings.workHours') }}</div>
             <div style="font-size:12px; color:#94a3b8; font-weight:500;
                         font-family:'Inter', sans-serif;">
               {{ workHoursLabel }}
@@ -169,7 +169,7 @@
       <!-- TIZIM -->
       <div style="font-size:11px; font-weight:700; color:#94a3b8;
                   text-transform:uppercase; letter-spacing:0.6px; margin:4px 0 10px 4px;">
-        Tizim
+        {{ t('settings.systemSection') }}
       </div>
       <div
         style="background:#ffffff; border-radius:14px; overflow:hidden;
@@ -191,7 +191,7 @@
             </svg>
           </div>
           <div style="flex:1;">
-            <div style="font-size:14px; font-weight:800; color:#0f172a;">Til</div>
+            <div style="font-size:14px; font-weight:800; color:#0f172a;">{{ t('settings.language') }}</div>
             <div style="font-size:12px; color:#94a3b8; font-weight:500;">{{ langLabel }}</div>
           </div>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8"
@@ -214,7 +214,7 @@
           <polyline points="16 17 21 12 16 7"/>
           <line x1="21" y1="12" x2="9" y2="12"/>
         </svg>
-        <span style="font-size:14px; font-weight:800; color:#ef4444;">Chiqish</span>
+        <span style="font-size:14px; font-weight:800; color:#ef4444;">{{ t('settings.logout') }}</span>
       </button>
     </div>
 
@@ -232,13 +232,13 @@
           <div style="width:40px; height:4px; border-radius:2px; background:#e2e8f0;
                       margin:0 auto 16px;" />
           <div style="font-size:17px; font-weight:900; color:#0f172a; margin-bottom:16px;">
-            Ish vaqti
+            {{ t('settings.workHours') }}
           </div>
           <div style="display:flex; gap:12px;">
             <div style="flex:1;">
               <div style="font-size:11px; font-weight:700; color:#94a3b8;
                           text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
-                Boshlanish
+                {{ t('settings.workStart') }}
               </div>
               <input
                 v-model.number="stadiumModal.workStart"
@@ -251,7 +251,7 @@
             <div style="flex:1;">
               <div style="font-size:11px; font-weight:700; color:#94a3b8;
                           text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
-                Tugash
+                {{ t('settings.workEnd') }}
               </div>
               <input
                 v-model.number="stadiumModal.workEnd"
@@ -268,7 +268,7 @@
                    color:#ffffff; font-size:15px; font-weight:800; border:none;
                    margin-top:16px; cursor:pointer; box-shadow:0 4px 12px rgba(22,163,74,0.3);"
           >
-            Saqlash
+            {{ t('common.save') }}
           </button>
           </div>
         </div>
@@ -289,18 +289,18 @@
           <div style="width:40px; height:4px; border-radius:2px; background:#e2e8f0;
                       margin:0 auto 16px;" />
           <div style="font-size:17px; font-weight:900; color:#0f172a; margin-bottom:16px;">
-            {{ fieldModal.id ? 'Maydonni tahrirlash' : 'Maydon qo\'shish' }}
+            {{ fieldModal.id ? t('settings.editFieldTitle') : t('settings.addFieldTitle') }}
           </div>
           <div style="display:flex; flex-direction:column; gap:12px;">
             <div>
               <div style="font-size:11px; font-weight:700; color:#94a3b8;
                           text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
-                Nomi
+                {{ t('settings.fieldNameLabel') }}
               </div>
               <input
                 v-model="fieldModal.name"
                 type="text"
-                placeholder="Maydon 1"
+                :placeholder="t('settings.fieldNamePlaceholder')"
                 style="width:100%; height:48px; border-radius:12px; border:1.5px solid #e2e8f0;
                        padding:0 14px; outline:none; font-size:15px; font-weight:600; color:#0f172a;"
               />
@@ -308,7 +308,7 @@
             <div>
               <div style="font-size:11px; font-weight:700; color:#94a3b8;
                           text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">
-                Soatlik narx (so'm)
+                {{ t('settings.hourlyPriceLabel') }}
               </div>
               <input
                 v-model.number="fieldModal.pricePerHour"
@@ -326,7 +326,7 @@
               style="flex:1; height:52px; border-radius:14px; background:#fee2e2;
                      color:#ef4444; font-size:15px; font-weight:800; border:none; cursor:pointer;"
             >
-              O'chirish
+              {{ t('common.delete') }}
             </button>
             <button
               @click="saveField"
@@ -334,7 +334,7 @@
                      color:#ffffff; font-size:15px; font-weight:800; border:none; cursor:pointer;
                      box-shadow:0 4px 12px rgba(22,163,74,0.3);"
             >
-              Saqlash
+              {{ t('common.save') }}
             </button>
           </div>
           </div>
@@ -355,7 +355,7 @@
           >
           <div style="width:40px; height:4px; border-radius:2px; background:#e2e8f0;
                       margin:0 auto 16px;" />
-          <div style="font-size:17px; font-weight:900; color:#0f172a; margin-bottom:16px;">Til</div>
+          <div style="font-size:17px; font-weight:900; color:#0f172a; margin-bottom:16px;">{{ t('settings.language') }}</div>
           <div style="display:flex; flex-direction:column; gap:8px;">
             <button
               v-for="lang in langs"
@@ -387,30 +387,33 @@ import { useStadiumsStore } from '../stores/stadiums'
 import { useAuthStore } from '../stores/auth'
 import { useBookingsStore } from '../stores/bookings'
 import { useClientsStore } from '../stores/clients'
+import { useToast, extractApiErrorMessage } from '../composables/useToast'
 import type { Field } from '../types'
+import type { AppLocale } from '../i18n'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const router = useRouter()
 const stadiumsStore = useStadiumsStore()
 const auth = useAuthStore()
 const bookingsStore = useBookingsStore()
 const clientsStore = useClientsStore()
+const toast = useToast()
 
 onMounted(() => {
   if (!stadiumsStore.loaded) stadiumsStore.loadAll().catch(() => {})
 })
 
-const langs = [
-  { key: 'uz', label: "O'zbek (lotin)" },
-  { key: 'ru', label: 'Русский' },
-  { key: 'en', label: 'English' },
-]
+const langs = computed(() => [
+  { key: 'uz' as AppLocale, label: t('settings.langUz') },
+  { key: 'uz-cyrl' as AppLocale, label: t('settings.langUzCyrl') },
+  { key: 'ru' as AppLocale, label: t('settings.langRu') },
+])
 const currentLang = computed(() => locale.value)
-const langLabel = computed(() => langs.find(l => l.key === currentLang.value)?.label || 'O\'zbek')
+const langLabel = computed(() => langs.value.find(l => l.key === currentLang.value)?.label || t('settings.langUz'))
 const langModalOpen = ref(false)
 
-function setLang(lang: string) {
-  locale.value = lang as any
+function setLang(lang: AppLocale) {
+  locale.value = lang
   localStorage.setItem('sm_lang', lang)
   stadiumsStore.updateStadiumSettings({ language: lang }).catch(() => {})
 }
@@ -435,11 +438,11 @@ const allFields = computed<(Field & { stadiumId: number })[]>(() =>
 const totalFields = computed(() => allFields.value.length)
 
 const avgPriceLabel = computed(() => {
-  if (allFields.value.length === 0) return 'O\'rnatilmagan'
+  if (allFields.value.length === 0) return t('settings.notSet')
   const avg = Math.round(
     allFields.value.reduce((sum, f) => sum + f.pricePerHour, 0) / allFields.value.length
   )
-  return `${formatMoney(avg)} so'm/soat`
+  return t('settings.pricePerHour', { amount: formatMoney(avg) })
 })
 
 const workHoursLabel = computed(() => {
@@ -468,8 +471,9 @@ async function saveStadium() {
       workEndHour: stadiumModal.value.workEnd,
     })
     stadiumModal.value = null
+    toast.success(t('settings.stadiumSaved'))
   } catch (e: any) {
-    alert(e?.message || 'Saqlashda xato')
+    toast.error(extractApiErrorMessage(e?.data, e?.message || t('settings.savingError')))
   } finally {
     savingStadium.value = false
   }
@@ -488,6 +492,7 @@ function openEditField(stadiumId: number | string, f: Field) {
 async function saveField() {
   if (!fieldModal.value?.name) return
   savingField.value = true
+  const wasEdit = !!fieldModal.value.id
   try {
     if (fieldModal.value.id) {
       await stadiumsStore.updateField(fieldModal.value.stadiumId, fieldModal.value.id, {
@@ -498,19 +503,21 @@ async function saveField() {
       await stadiumsStore.addField(fieldModal.value.stadiumId, fieldModal.value.name, fieldModal.value.pricePerHour)
     }
     fieldModal.value = null
+    toast.success(wasEdit ? t('settings.fieldUpdated') : t('settings.fieldAdded'))
   } catch (e: any) {
-    alert(e?.message || 'Saqlashda xato')
+    toast.error(extractApiErrorMessage(e?.data, e?.message || t('settings.savingError')))
   } finally {
     savingField.value = false
   }
 }
 async function deleteField(stadiumId: number | string, fieldId: number) {
-  if (!confirm("Maydonni o'chirishni tasdiqlaysizmi?")) return
+  if (!confirm(t('settings.confirmDeleteField'))) return
   try {
     await stadiumsStore.deleteField(Number(stadiumId) || 1, fieldId)
     fieldModal.value = null
+    toast.success(t('settings.fieldDeleted'))
   } catch (e: any) {
-    alert(e?.message || "O'chirishda xato")
+    toast.error(extractApiErrorMessage(e?.data, e?.message || t('settings.deletingError')))
   }
 }
 
@@ -521,12 +528,13 @@ function openPriceModal() {
 }
 
 function logout() {
-  if (confirm('Tizimdan chiqishni tasdiqlaysizmi?')) {
+  if (confirm(t('settings.confirmLogout'))) {
     auth.logout()
     stadiumsStore.reset()
     bookingsStore.reset()
     clientsStore.reset()
     router.push({ name: 'login' })
+    toast.success(t('settings.loggedOut'))
   }
 }
 </script>

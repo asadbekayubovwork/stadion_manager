@@ -14,13 +14,13 @@
       <!-- Title -->
       <div class="pt-6">
         <h1 style="font-size:30px; font-weight:700; color:#0f172a; letter-spacing:-0.75px; line-height:36px; margin:0;">
-          Hush kelibsiz
+          {{ t('auth.welcome') }}
         </h1>
       </div>
 
       <!-- Subtitle -->
       <p style="font-size:16px; font-weight:400; color:#64748b; line-height:24px; margin:0;">
-        Tizimga kirish uchun ma'lumotlaringizni kiriting
+        {{ t('auth.loginSubtitle') }}
       </p>
     </div>
 
@@ -29,7 +29,7 @@
 
       <!-- Phone label -->
       <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px; display:block;">
-        Telefon raqam
+        {{ t('auth.phoneLabel') }}
       </label>
 
       <!-- Phone input -->
@@ -38,19 +38,10 @@
         style="padding: 17px; border-radius: 16px; position: relative; margin-top: -8px;"
         :style="phoneFocused
           ? 'border: 1px solid rgba(22,163,74,0.8); box-shadow: 0px 0px 0px 4px rgba(22,163,74,0.1), 0px 1px 3px 0px rgba(0,0,0,0.1), 0px 1px 2px -1px rgba(0,0,0,0.1);'
-          : errorMsg
-            ? 'border: 1px solid rgba(244,63,94,0.6); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'
-            : 'border: 1px solid rgba(22,163,74,0.5); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'"
+          : 'border: 1px solid rgba(22,163,74,0.5); box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.06);'"
       >
         <!-- Country prefix -->
-        <div class="flex items-center flex-shrink-0" style="padding-right:17px; border-right: 1px solid rgba(226,232,240,0.7); gap:8px;">
-          <!-- Uzbekistan flag -->
-          <div class="overflow-hidden flex-shrink-0" style="width:24px; height:16px; border-radius:12px; border:1px solid #e2e8f0;">
-            <div style="height:5.25px; background:#0099b5;" />
-            <div style="height:3.5px; background:#ffffff;" />
-            <div style="height:5.25px; background:#1eb53a;" />
-          </div>
-          <!-- +998 -->
+        <div class="flex items-center flex-shrink-0" style="padding-right:17px; border-right: 1px solid rgba(226,232,240,0.7);">
           <span style="font-size:18px; font-weight:600; color:#0f172a; letter-spacing:0.45px; line-height:28px; white-space:nowrap;">
             +998
           </span>
@@ -75,7 +66,7 @@
 
       <!-- Password label -->
       <label style="font-size:14px; font-weight:500; color:#334155; line-height:20px; display:block;">
-        Parol
+        {{ t('auth.password') }}
       </label>
 
       <!-- Password input -->
@@ -95,7 +86,7 @@
         <input
           v-model="password"
           :type="showPassword ? 'text' : 'password'"
-          placeholder="Parolingiz"
+          :placeholder="t('auth.passwordPlaceholder')"
           class="w-full bg-transparent outline-none"
           style="font-size:18px; font-weight:500; color:#0f172a; letter-spacing:0.5px; line-height:28px; border:none; padding-left:12px;"
           @focus="passwordFocused = true"
@@ -121,14 +112,6 @@
         </button>
       </div>
 
-      <!-- Error message -->
-      <p
-        v-if="errorMsg"
-        style="font-size:13px; font-weight:500; color:#f43f5e; margin:0; padding-left:2px;"
-      >
-        {{ errorMsg }}
-      </p>
-
       <!-- Security note -->
       <div class="flex items-center" style="gap:8px; padding-top:4px;">
         <svg class="flex-shrink-0" width="16" height="16" viewBox="0 0 12 14.6689" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -138,7 +121,7 @@
                 stroke="#16A34A" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <span style="font-size:12px; font-weight:500; color:#64748b; line-height:16px;">
-          Ma'lumotlaringiz ishonchli himoyalangan
+          {{ t('auth.secureNote') }}
         </span>
       </div>
     </div>
@@ -153,16 +136,26 @@
         @click="proceed"
         :disabled="!isValid || loading"
         class="relative flex items-center justify-center w-full transition-all active:scale-95"
-        style="height:61.5px; border-radius:9999px; border:none; cursor:pointer;"
+        style="height:61.5px; border-radius:9999px; border:none; cursor:pointer; gap:10px;"
         :style="(isValid && !loading)
           ? 'background:#16a34a; box-shadow:0px 1px 3px 0px rgba(22,163,74,0.2), 0px 1px 2px -1px rgba(22,163,74,0.2);'
-          : 'background:#e2e8f0; cursor:not-allowed;'"
+          : loading
+            ? 'background:#16a34a; opacity:0.85; cursor:wait;'
+            : 'background:#e2e8f0; cursor:not-allowed;'"
       >
+        <svg
+          v-if="loading"
+          class="login-spinner"
+          width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" />
+          <path d="M21 12a9 9 0 0 0-9-9" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
         <span
           style="font-size:17px; font-weight:600; line-height:25.5px; letter-spacing:0;"
-          :style="(isValid && !loading) ? 'color:#ffffff;' : 'color:#94a3b8;'"
+          :style="(isValid && !loading) ? 'color:#ffffff;' : loading ? 'color:#ffffff;' : 'color:#94a3b8;'"
         >
-          {{ loading ? 'Kirilmoqda…' : 'Kirish' }}
+          {{ loading ? t('auth.entering') : t('auth.enter') }}
         </span>
         <svg
           v-if="isValid && !loading"
@@ -178,14 +171,14 @@
       <!-- Register link -->
       <div class="flex items-center justify-center" style="gap:6px;">
         <span style="font-size:14px; font-weight:500; color:#64748b; line-height:20px;">
-          Hisobingiz yo'qmi?
+          {{ t('auth.noAccount') }}
         </span>
         <button
           type="button"
           @click="router.push({ name: 'register' })"
           style="background:transparent; border:none; cursor:pointer; padding:0; font-size:14px; font-weight:700; color:#16a34a; line-height:20px;"
         >
-          Ro'yxatdan o'tish →
+          {{ t('auth.registerArrow') }}
         </button>
       </div>
     </div>
@@ -196,13 +189,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { useStadiumsStore } from '../stores/stadiums'
 import { ApiError } from '../api/http'
+import { useToast, extractApiErrorMessage } from '../composables/useToast'
 
 const router = useRouter()
+const { t } = useI18n()
 const auth = useAuthStore()
 const stadiumsStore = useStadiumsStore()
+const toast = useToast()
 
 const phone = ref('')
 const password = ref('')
@@ -210,7 +207,6 @@ const phoneFocused = ref(false)
 const passwordFocused = ref(false)
 const showPassword = ref(false)
 const loading = ref(false)
-const errorMsg = ref('')
 
 const tg = (window as any).Telegram?.WebApp
 
@@ -239,26 +235,35 @@ function formatPhone(e: Event) {
 async function proceed() {
   if (!isValid.value || loading.value) return
   loading.value = true
-  errorMsg.value = ''
   try {
     await auth.login('+998' + digits.value, password.value)
     await stadiumsStore.loadAll()
     const hasStadium = !!stadiumsStore.settings?.name
+    toast.success(t('auth.loginSuccess'))
     router.push({ name: hasStadium ? 'home' : 'onboarding' })
   } catch (e) {
+    let msg = t('common.errorGeneric')
     if (e instanceof ApiError) {
-      if (e.status === 401 || e.status === 400) {
-        errorMsg.value = 'Telefon yoki parol noto\'g\'ri'
-      } else if (e.status === 0) {
-        errorMsg.value = 'Internet ulanmagan'
+      if (e.status === 0) {
+        msg = t('common.internetOff')
+      } else if (e.status === 401 || e.status === 400) {
+        msg = extractApiErrorMessage(e.data, t('auth.phoneOrPasswordIncorrect'))
       } else {
-        errorMsg.value = e.message || 'Xatolik yuz berdi'
+        msg = extractApiErrorMessage(e.data, e.message || t('common.errorGeneric'))
       }
-    } else {
-      errorMsg.value = 'Xatolik yuz berdi'
     }
+    toast.error(msg)
   } finally {
     loading.value = false
   }
 }
 </script>
+
+<style scoped>
+.login-spinner {
+  animation: login-spin 0.8s linear infinite;
+}
+@keyframes login-spin {
+  to { transform: rotate(360deg); }
+}
+</style>

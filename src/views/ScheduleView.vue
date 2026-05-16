@@ -7,7 +7,7 @@
       <div style="padding:12px 16px 8px; display:flex; align-items:center; justify-content:space-between;">
         <div>
           <div style="font-size:18px; font-weight:900; color:#0f172a;">{{ monthLabel }}</div>
-          <div style="font-size:12px; color:#475569; font-weight:500;">Jadval ko'rinishi</div>
+          <div style="font-size:12px; color:#475569; font-weight:500;">{{ t('schedule.scheduleView') }}</div>
         </div>
         <button
           @click="openNewBooking()"
@@ -20,7 +20,7 @@
             <line x1="12" y1="5" x2="12" y2="19"/>
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          <span style="font-size:13px; font-weight:800; color:#ffffff;">Bron</span>
+          <span style="font-size:13px; font-weight:800; color:#ffffff;">{{ t('schedule.bookBtn') }}</span>
         </button>
       </div>
 
@@ -97,19 +97,20 @@
           </div>
         </div>
 
-        <!-- Empty slot cards -->
+        <!-- Per-hour empty slot button -->
         <div
-          v-for="slot in emptySlots"
-          :key="'empty-' + slot.startTime"
-          @click="openNewBooking(slot.startTime)"
+          v-for="hour in hours"
+          :key="'empty-' + hour"
+          v-show="isHourFree(hour)"
+          @click="openNewBooking(hourTime(hour))"
           style="position:absolute; left:54px; right:0; padding:6px 0; cursor:pointer;"
-          :style="{ top: slotY(slot.startTime) + 'px', height: slot.heightPx + 'px' }"
+          :style="{ top: hourToY(hour) + 'px', height: HOUR_HEIGHT + 'px' }"
         >
           <div
-            style="height:100%; min-height:36px; border-radius:12px;
-                   border:1.5px dashed #e2e8f0; display:flex; align-items:center;
-                   justify-content:center; gap:6px; transition:all 0.15s;"
             class="hover-empty"
+            style="height:100%; border-radius:12px; border:1.5px dashed #e2e8f0;
+                   display:flex; align-items:center; justify-content:center;
+                   gap:6px; transition:all 0.15s;"
           >
             <div
               style="width:22px; height:22px; border-radius:6px; background:#dcfce7;
@@ -121,7 +122,7 @@
                 <line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
             </div>
-            <span style="font-size:12px; color:#94a3b8; font-weight:600;">Bo'sh joy</span>
+            <span style="font-size:12px; color:#94a3b8; font-weight:600;">{{ t('schedule.freeSlot') }}</span>
           </div>
         </div>
 
@@ -130,42 +131,46 @@
           v-for="b in dayBookings"
           :key="b.id"
           @click="openBookingDetail(b)"
-          style="position:absolute; left:54px; right:0; padding:6px 0; cursor:pointer;"
+          style="position:absolute; left:54px; right:0; padding:3px 0; cursor:pointer;"
           :style="{ top: slotY(b.startTime) + 'px', height: bookingHeight(b) + 'px' }"
         >
           <div
-            :style="`height:100%; border-radius:12px;
+            :style="`height:100%; border-radius:14px;
                      background:linear-gradient(135deg, #fed7aa 0%, ${b.paymentStatus === 'paid' ? 'rgba(249,115,22,0.13)' : 'rgba(249,115,22,0.20)'} 100%);
-                     border:1.5px solid rgba(249,115,22,0.4); padding:8px 12px;
-                     display:flex; flex-direction:column; justify-content:center; gap:2px;`"
+                     border:1.5px solid rgba(249,115,22,0.4); padding:10px 14px;
+                     display:flex; flex-direction:column; justify-content:center; gap:4px; overflow:hidden;`"
           >
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-              <div style="font-size:13px; font-weight:800; color:#9a3412; min-width:0;
-                          overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <div style="font-size:16px; font-weight:800; color:#9a3412; min-width:0;
+                          overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; line-height:1.2;">
                 {{ b.customerName }}
               </div>
               <div
                 :style="b.paymentStatus === 'paid'
-                  ? 'width:20px; height:20px; border-radius:6px; background:#16a34a; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-left:6px;'
-                  : 'width:20px; height:20px; border-radius:6px; background:#f97316; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-left:6px;'"
+                  ? 'width:24px; height:24px; border-radius:7px; background:#16a34a; display:flex; align-items:center; justify-content:center; flex-shrink:0;'
+                  : 'width:24px; height:24px; border-radius:7px; background:#f97316; display:flex; align-items:center; justify-content:center; flex-shrink:0;'"
               >
-                <svg v-if="b.paymentStatus === 'paid'" width="12" height="12" viewBox="0 0 24 24"
+                <svg v-if="b.paymentStatus === 'paid'" width="14" height="14" viewBox="0 0 24 24"
                      fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
-                <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none"
+                <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none"
                      stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                   <circle cx="12" cy="12" r="10"/>
                   <polyline points="12 6 12 12 16 14"/>
                 </svg>
               </div>
             </div>
-            <div style="font-size:11px; color:#9a3412; font-weight:600; font-family:'Inter', sans-serif;">
-              {{ b.startTime }}–{{ b.endTime }}<span v-if="bookingHeight(b) >= 56"> · {{ formatMoney(b.price) }} so'm</span>
-            </div>
-            <div v-if="bookingHeight(b) >= 64"
-                 style="font-size:11px; color:#9a3412; opacity:0.7; font-weight:500;">
-              {{ b.customerPhone }}
+            <div style="font-size:12px; color:#9a3412; font-weight:600; font-family:'Inter', sans-serif;
+                        line-height:1.25; display:flex; align-items:center; gap:6px;
+                        white-space:nowrap; overflow:hidden;">
+              <span style="font-weight:700; flex-shrink:0;">{{ b.startTime }}–{{ b.endTime }}</span>
+              <span v-if="b.customerPhone" style="opacity:0.7; min-width:0; overflow:hidden; text-overflow:ellipsis;">
+                · {{ b.customerPhone }}
+              </span>
+              <span style="margin-left:auto; font-weight:800; flex-shrink:0;">
+                {{ formatMoney(b.price) }} {{ t('common.soum') }}
+              </span>
             </div>
           </div>
         </div>
@@ -188,6 +193,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useStadiumsStore } from '../stores/stadiums'
 import { useBookingsStore } from '../stores/bookings'
 import type { Booking } from '../types'
@@ -195,6 +201,7 @@ import dayjs from 'dayjs'
 import BookingModal from '../components/booking/BookingModal.vue'
 
 const router = useRouter()
+const { t, tm, rt } = useI18n()
 const stadiumsStore = useStadiumsStore()
 const bookingsStore = useBookingsStore()
 
@@ -233,25 +240,22 @@ const nowY = computed(() => {
   return mins * PX_PER_MIN
 })
 
-const MONTHS_UZ = ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun', 'Iyul', 'Avgust', 'Sentyabr', 'Oktyabr', 'Noyabr', 'Dekabr']
 const monthLabel = computed(() => {
   const d = dayjs(selectedDate.value)
-  return `${MONTHS_UZ[d.month()]} ${d.year()}`
+  const months = tm('date.months') as unknown as any[]
+  return `${rt(months[d.month()])} ${d.year()}`
 })
-
-const WEEKDAYS_UZ_SHORT = ['Ya', 'D', 'S', 'Ch', 'P', 'J', 'Sh']
 
 const weekStrip = computed(() => {
   const today = dayjs()
-  const ref = dayjs(selectedDate.value)
-  const start = ref.subtract(ref.day(), 'day')
+  const weekdaysShort = tm('date.weekdaysShort') as unknown as any[]
   return Array.from({ length: 7 }, (_, i) => {
-    const d = start.add(i, 'day')
+    const d = today.add(i, 'day')
     return {
       value: d.format('YYYY-MM-DD'),
       day: d.date(),
-      weekday: WEEKDAYS_UZ_SHORT[d.day()],
-      faded: d.isBefore(today, 'day'),
+      weekday: rt(weekdaysShort[d.day()]),
+      faded: false,
     }
   })
 })
@@ -272,34 +276,22 @@ function bookingHeight(b: Booking) {
   return b.durationMin * PX_PER_MIN
 }
 
-const emptySlots = computed(() => {
-  const slots: { startTime: string; endTime: string; heightPx: number }[] = []
-  const booked = [...dayBookings.value].sort((a, b) => a.startTime.localeCompare(b.startTime))
-  const ws = `${String(workStart.value).padStart(2, '0')}:00`
-  const we = `${String(workEnd.value).padStart(2, '0')}:00`
+function hourTime(hour: number) {
+  return `${String(hour).padStart(2, '0')}:00`
+}
 
-  let cursor = ws
-  for (const b of booked) {
-    if (cursor < b.startTime) {
-      const [ch, cm] = cursor.split(':').map(Number)
-      const [bh, bm] = b.startTime.split(':').map(Number)
-      const mins = (bh - ch) * 60 + (bm - cm)
-      if (mins >= 30) {
-        slots.push({ startTime: cursor, endTime: b.startTime, heightPx: mins * PX_PER_MIN })
-      }
-    }
-    cursor = b.endTime
+function isHourFree(hour: number) {
+  const hourStart = hour * 60
+  const hourEnd = (hour + 1) * 60
+  for (const b of dayBookings.value) {
+    const [bsh, bsm] = b.startTime.split(':').map(Number)
+    const [beh, bem] = b.endTime.split(':').map(Number)
+    const bs = bsh * 60 + bsm
+    const be = beh * 60 + bem
+    if (bs < hourEnd && be > hourStart) return false
   }
-  if (cursor < we) {
-    const [ch, cm] = cursor.split(':').map(Number)
-    const [eh, em] = we.split(':').map(Number)
-    const mins = (eh - ch) * 60 + (em - cm)
-    if (mins >= 30) {
-      slots.push({ startTime: cursor, endTime: we, heightPx: mins * PX_PER_MIN })
-    }
-  }
-  return slots
-})
+  return true
+}
 
 function selectDate(d: string) {
   selectedDate.value = d

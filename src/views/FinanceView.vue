@@ -6,14 +6,14 @@
       style="background:#ffffff; border-bottom:1px solid #e2e8f0; padding:14px 16px;
              display:flex; align-items:center; justify-content:space-between;"
     >
-      <div style="font-size:22px; font-weight:900; color:#0f172a;">Moliya</div>
+      <div style="font-size:22px; font-weight:900; color:#0f172a;">{{ t('finance.title') }}</div>
       <div
         style="background:#f1f5f9; border-radius:10px; padding:4px;
                display:flex; gap:2px;"
       >
         <button
           v-for="p in periods"
-          :key="p.key"
+          :key="p.key as string"
           @click="activePeriod = p.key"
           :style="activePeriod === p.key
             ? 'padding:6px 14px; border-radius:8px; background:#16a34a; color:#ffffff; font-size:12px; font-weight:800; border:none; cursor:pointer; box-shadow:0 2px 6px rgba(22,163,74,0.3);'
@@ -38,8 +38,8 @@
                     font-family:'Inter', sans-serif; margin-top:4px; letter-spacing:-0.5px;">
           {{ formatMoney(stats.total) }}
         </div>
-        <div style="font-size:13px; color:rgba(255,255,255,0.7); font-weight:600;">so'm</div>
-        <div v-if="totalLabel !== 'Bugungi jami'"
+        <div style="font-size:13px; color:rgba(255,255,255,0.7); font-weight:600;">{{ t('common.soum') }}</div>
+        <div v-if="activePeriod !== 'today'"
              style="display:flex; align-items:center; gap:4px; margin-top:8px;">
           <svg v-if="deltaPct >= 0" width="14" height="14" viewBox="0 0 24 24" fill="none"
                stroke="rgba(255,255,255,0.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -63,7 +63,7 @@
                box-shadow:0 2px 8px rgba(15,23,42,0.08); margin-bottom:14px;"
       >
         <div style="font-size:13px; font-weight:800; color:#0f172a; margin-bottom:14px;">
-          Kunlik daromad
+          {{ t('finance.dailyRevenue') }}
         </div>
         <div style="display:flex; align-items:flex-end; gap:8px; height:90px;">
           <div
@@ -101,7 +101,7 @@
                  box-shadow:0 2px 8px rgba(15,23,42,0.08); border-top:3px solid #16a34a;"
         >
           <div style="font-size:11px; color:#16a34a; font-weight:700;
-                      text-transform:uppercase; letter-spacing:0.5px;">Naqd</div>
+                      text-transform:uppercase; letter-spacing:0.5px;">{{ t('finance.cash') }}</div>
           <div style="font-size:18px; font-weight:900; color:#0f172a; margin-top:4px;
                       font-family:'Inter', sans-serif;">
             {{ formatMoney(stats.cash) }}
@@ -115,7 +115,7 @@
                  box-shadow:0 2px 8px rgba(15,23,42,0.08); border-top:3px solid #3b82f6;"
         >
           <div style="font-size:11px; color:#3b82f6; font-weight:700;
-                      text-transform:uppercase; letter-spacing:0.5px;">Karta</div>
+                      text-transform:uppercase; letter-spacing:0.5px;">{{ t('finance.card') }}</div>
           <div style="font-size:18px; font-weight:900; color:#0f172a; margin-top:4px;
                       font-family:'Inter', sans-serif;">
             {{ formatMoney(stats.card) }}
@@ -135,18 +135,18 @@
           style="display:flex; align-items:center; justify-content:space-between;
                  padding:12px 14px; border-bottom:1px solid #f1f5f9;"
         >
-          <div style="font-size:14px; font-weight:800; color:#0f172a;">To'lanmagan bronlar</div>
+          <div style="font-size:14px; font-weight:800; color:#0f172a;">{{ t('finance.unpaidBookings') }}</div>
           <div
             style="background:#fff7ed; padding:2px 10px; border-radius:8px;
                    font-size:11px; font-weight:700; color:#9a3412;"
           >
-            {{ unpaidCount }} ta · {{ formatMoney(unpaidTotal) }} so'm
+            {{ t('finance.unpaidCount', { count: unpaidCount }) }} · {{ formatMoney(unpaidTotal) }} {{ t('common.soum') }}
           </div>
         </div>
 
         <div v-if="unpaid.length === 0"
              style="padding:24px; text-align:center; color:#94a3b8; font-size:13px;">
-          To'lanmagan bron yo'q
+          {{ t('finance.noUnpaid') }}
         </div>
 
         <div v-else>
@@ -169,7 +169,7 @@
             </div>
             <div style="font-size:14px; font-weight:800; color:#f97316;
                         font-family:'Inter', sans-serif; flex-shrink:0; margin-left:12px;">
-              {{ formatMoney(b.price) }} so'm
+              {{ formatMoney(b.price) }} {{ t('common.soum') }}
             </div>
           </div>
         </div>
@@ -181,6 +181,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useBookingsStore } from '../stores/bookings'
 import { useStadiumsStore } from '../stores/stadiums'
 import * as financeApi from '../api/finance'
@@ -189,16 +190,17 @@ import type { FinanceData } from '../types'
 import dayjs from 'dayjs'
 
 const router = useRouter()
+const { t, tm, rt } = useI18n()
 const bookingsStore = useBookingsStore()
 const stadiumsStore = useStadiumsStore()
 const finance = ref<FinanceData | null>(null)
 const loading = ref(false)
 
-const periods = [
-  { key: 'today', label: 'Kun' },
-  { key: 'week', label: 'Hafta' },
-  { key: 'month', label: 'Oy' },
-] as const
+const periods = computed(() => [
+  { key: 'today' as const, label: t('finance.day') },
+  { key: 'week' as const, label: t('finance.week') },
+  { key: 'month' as const, label: t('finance.month') },
+])
 
 const activePeriod = ref<'today' | 'week' | 'month'>('week')
 
@@ -253,14 +255,14 @@ const deltaPct = computed(() => {
 })
 
 const totalLabel = computed(() =>
-  activePeriod.value === 'today' ? 'Bugungi jami'
-    : activePeriod.value === 'week' ? "Bu hafta jami"
-    : 'Bu oy jami'
+  activePeriod.value === 'today' ? t('finance.totalToday')
+    : activePeriod.value === 'week' ? t('finance.totalWeek')
+    : t('finance.totalMonth')
 )
 
 const deltaLabel = computed(() =>
-  activePeriod.value === 'week' ? "o'tgan haftadan"
-    : activePeriod.value === 'month' ? "o'tgan oydan"
+  activePeriod.value === 'week' ? t('finance.fromLastWeek')
+    : activePeriod.value === 'month' ? t('finance.fromLastMonth')
     : ''
 )
 
@@ -278,8 +280,6 @@ const cardPct = computed(() => {
   }
   return 100 - cashPct.value
 })
-
-const WEEKDAYS_LABEL = ['Ya', 'Du', 'Se', 'Ch', 'Pa', 'Ju', 'Sh']
 
 const chart = computed(() => {
   const today = dayjs()
@@ -310,8 +310,9 @@ const chart = computed(() => {
   }
   if (activePeriod.value === 'week') {
     const start = today.startOf('week')
-    const buckets = WEEKDAYS_LABEL.map((label, i) => ({
-      label,
+    const weekdayLabels = tm('date.weekdaysShort2') as unknown as any[]
+    const buckets = weekdayLabels.map((label, i) => ({
+      label: rt(label),
       value: 0,
       date: start.add(i, 'day').format('YYYY-MM-DD'),
     }))

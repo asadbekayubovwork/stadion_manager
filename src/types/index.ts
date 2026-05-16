@@ -1,4 +1,4 @@
-export type Lang = 'uz' | 'ru' | 'en'
+export type Lang = 'uz' | 'uz-cyrl' | 'ru'
 export type PaymentMethod = 'cash' | 'card'
 export type BookingStatus = 'active' | 'cancelled'
 export type PaymentStatus = 'paid' | 'unpaid'

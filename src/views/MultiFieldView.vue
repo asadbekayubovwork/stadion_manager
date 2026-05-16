@@ -7,7 +7,7 @@
              display:flex; align-items:center; justify-content:space-between;"
     >
       <div>
-        <div style="font-size:18px; font-weight:900; color:#0f172a;">Barcha maydonlar</div>
+        <div style="font-size:18px; font-weight:900; color:#0f172a;">{{ t('multiField.allFields') }}</div>
         <div style="font-size:12px; color:#475569; font-weight:500;">{{ dateLabel }}</div>
       </div>
       <div style="display:flex; gap:8px;">
@@ -80,7 +80,7 @@
 
       <!-- Field cards -->
       <div style="font-size:15px; font-weight:800; color:#0f172a; margin:16px 0 10px;">
-        Maydon holati
+        {{ t('multiField.fieldStatus') }}
       </div>
       <div style="display:flex; flex-direction:column; gap:10px;">
         <div
@@ -96,20 +96,20 @@
             <div style="font-size:15px; font-weight:800; color:#0f172a;">{{ f.name }}</div>
             <div style="font-size:12px; color:#475569; font-weight:500; margin-top:2px;
                         overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-              Keyingi: {{ nextLabel(f.id) }}
+              {{ t('multiField.next') }}: {{ nextLabel(f.id) }}
             </div>
             <div style="display:flex; gap:8px; margin-top:8px;">
               <div
                 style="background:#fff7ed; border-radius:8px; padding:3px 10px;
                        font-size:12px; font-weight:700; color:#9a3412;"
               >
-                {{ stats[f.id].booked }} band
+                {{ stats[f.id].booked }} {{ t('multiField.booked') }}
               </div>
               <div
                 style="background:#dcfce7; border-radius:8px; padding:3px 10px;
                        font-size:12px; font-weight:700; color:#14532d;"
               >
-                {{ stats[f.id].free }} bo'sh
+                {{ stats[f.id].free }} {{ t('multiField.free') }}
               </div>
             </div>
           </div>
@@ -126,11 +126,13 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useStadiumsStore } from '../stores/stadiums'
 import { useBookingsStore } from '../stores/bookings'
 import dayjs from 'dayjs'
 
 const router = useRouter()
+const { t, tm, rt } = useI18n()
 const stadiumsStore = useStadiumsStore()
 const bookingsStore = useBookingsStore()
 
@@ -194,12 +196,11 @@ const stats = computed<Record<string, { booked: number; free: number }>>(() => {
   return result
 })
 
-const WEEKDAYS_UZ = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba']
-const MONTHS_UZ_SHORT = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek']
-
 const dateLabel = computed(() => {
   const d = dayjs(selectedDate.value)
-  return `${d.date()} ${MONTHS_UZ_SHORT[d.month()]}, ${WEEKDAYS_UZ[d.day()]}`
+  const monthsShort = tm('date.monthsShort') as unknown as any[]
+  const weekdays = tm('date.weekdays') as unknown as any[]
+  return `${d.date()} ${rt(monthsShort[d.month()])}, ${rt(weekdays[d.day()]).toLowerCase()}`
 })
 
 function timeToMinutes(hhmm: string) {
@@ -219,7 +220,7 @@ function nextLabel(fieldId: number) {
     .getForFieldAndDate(fieldId, selectedDate.value)
     .filter(b => b.endTime > now)
     .sort((a, b) => a.startTime.localeCompare(b.startTime))[0]
-  if (!upcoming) return "Bo'sh"
+  if (!upcoming) return t('multiField.empty')
   return `${(upcoming.customerName || '—').split(' ')[0]} — ${upcoming.startTime}`
 }
 

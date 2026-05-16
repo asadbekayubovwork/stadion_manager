@@ -31,7 +31,7 @@
           </button>
           <div style="flex:1; min-width:0;">
             <div style="font-size:17px; font-weight:900; color:#0f172a;">
-              {{ isEdit ? 'Bronni tahrirlash' : 'Yangi bron' }}
+              {{ isEdit ? t('bookingModal.editTitle') : t('bookingModal.newTitle') }}
             </div>
             <div style="font-size:12px; color:#475569; font-weight:500;
                         overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
@@ -43,7 +43,7 @@
             style="background:none; border:none; cursor:pointer; padding:0;
                    font-size:13px; color:#94a3b8; font-weight:600;"
           >
-            Bekor
+            {{ t('bookingModal.cancelTop') }}
           </button>
         </div>
 
@@ -60,7 +60,7 @@
             <div>
               <div style="font-size:11px; color:rgba(255,255,255,0.75); font-weight:600;
                           text-transform:uppercase; letter-spacing:0.5px;">
-                Tanlangan vaqt
+                {{ t('bookingModal.selectedTime') }}
               </div>
               <div style="font-size:28px; font-weight:900; color:#ffffff;
                           font-family:'Inter', sans-serif; margin-top:2px;">
@@ -69,7 +69,7 @@
             </div>
             <div style="text-align:right;">
               <div style="font-size:11px; color:rgba(255,255,255,0.75); font-weight:600;">
-                Davomiyligi
+                {{ t('bookingModal.durationLabel') }}
               </div>
               <div style="font-size:22px; font-weight:900; color:#ffffff;">
                 {{ durationLabel }}
@@ -82,7 +82,7 @@
 
             <!-- Field selector (only if more than 1) -->
             <div v-if="fields.length > 1">
-              <div :class="'lbl'">Maydon</div>
+              <div :class="'lbl'">{{ t('bookingModal.field') }}</div>
               <div style="display:flex; gap:8px;">
                 <button
                   v-for="f in fields"
@@ -97,7 +97,7 @@
 
             <!-- Client name -->
             <div>
-              <div :class="'lbl'">Mijoz</div>
+              <div :class="'lbl'">{{ t('bookingModal.client') }}</div>
               <div :style="inputBox(form.customerName)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                      :stroke="form.customerName ? '#16a34a' : '#94a3b8'"
@@ -108,7 +108,7 @@
                 <input
                   v-model="form.customerName"
                   type="text"
-                  placeholder="Mijoz ismi"
+                  :placeholder="t('bookingModal.clientPlaceholder')"
                   style="flex:1; outline:none; border:none; background:transparent;
                          font-size:16px; font-weight:700; color:#0f172a; min-width:0;"
                 />
@@ -117,7 +117,7 @@
 
             <!-- Phone -->
             <div>
-              <div :class="'lbl'">Telefon</div>
+              <div :class="'lbl'">{{ t('bookingModal.phone') }}</div>
               <div :style="inputBox(false)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -139,7 +139,7 @@
 
             <!-- Date -->
             <div>
-              <div :class="'lbl'">Sana</div>
+              <div :class="'lbl'">{{ t('bookingModal.date') }}</div>
               <div :style="inputBox(false)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -161,7 +161,7 @@
             <!-- Time row -->
             <div style="display:flex; gap:10px;">
               <div style="flex:1;">
-                <div :class="'lbl'">Boshlanish</div>
+                <div :class="'lbl'">{{ t('bookingModal.start') }}</div>
                 <div :style="inputBox(false, true)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569"
                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -178,7 +178,7 @@
                 </div>
               </div>
               <div style="flex:1;">
-                <div :class="'lbl'">Tugash</div>
+                <div :class="'lbl'">{{ t('bookingModal.end') }}</div>
                 <div :style="inputBox(false, true)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569"
                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -193,7 +193,7 @@
 
             <!-- Duration chips -->
             <div>
-              <div :class="'lbl'">Davomiyligi</div>
+              <div :class="'lbl'">{{ t('bookingModal.durationLabel') }}</div>
               <div style="display:flex; gap:8px;">
                 <button
                   v-for="d in durations"
@@ -208,7 +208,7 @@
 
             <!-- Price -->
             <div>
-              <div :class="'lbl'">Narx</div>
+              <div :class="'lbl'">{{ t('bookingModal.priceLabel') }}</div>
               <div :style="inputBox(false)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#475569"
                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -223,17 +223,17 @@
                          font-size:18px; font-weight:900; color:#0f172a;
                          font-family:'Inter', sans-serif; min-width:0;"
                 />
-                <span style="font-size:13px; color:#94a3b8; font-weight:600; flex-shrink:0;">so'm</span>
+                <span style="font-size:13px; color:#94a3b8; font-weight:600; flex-shrink:0;">{{ t('common.soum') }}</span>
               </div>
             </div>
 
             <!-- Notes -->
             <div>
-              <div :class="'lbl'">Izoh (ixtiyoriy)</div>
+              <div :class="'lbl'">{{ t('bookingModal.notesOptional') }}</div>
               <textarea
                 v-model="form.notes"
                 rows="2"
-                placeholder="Izoh yozing..."
+                :placeholder="t('bookingModal.notesPlaceholder')"
                 style="width:100%; background:#ffffff; border-radius:12px;
                        border:1.5px solid #e2e8f0; padding:12px 14px;
                        outline:none; resize:none; font-family:'Inter', sans-serif;
@@ -255,7 +255,7 @@
                 <line x1="12" y1="16" x2="12.01" y2="16"/>
               </svg>
               <span style="font-size:13px; font-weight:700;">
-                {{ serverError || 'Bu vaqt band!' }}
+                {{ serverError || t('bookingModal.conflict') }}
               </span>
             </div>
           </div>
@@ -281,7 +281,7 @@
             <span :style="canSave && !conflict && !saving
               ? 'font-size:17px; font-weight:900; color:#ffffff;'
               : 'font-size:17px; font-weight:900; color:#94a3b8;'">
-              {{ saving ? 'Saqlanmoqda…' : 'Bronni saqlash' }}
+              {{ saving ? t('common.saving') : t('bookingModal.saveBooking') }}
             </span>
           </button>
         </div>
@@ -293,10 +293,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useStadiumsStore } from '../../stores/stadiums'
 import { useBookingsStore } from '../../stores/bookings'
+import { useToast, extractApiErrorMessage } from '../../composables/useToast'
 import type { Booking } from '../../types'
 import dayjs from 'dayjs'
+
+const { t, tm, rt } = useI18n()
 
 const props = defineProps<{
   show: boolean
@@ -309,16 +313,17 @@ const emit = defineEmits<{ close: []; saved: [] }>()
 
 const stadiumsStore = useStadiumsStore()
 const bookingsStore = useBookingsStore()
+const toast = useToast()
 
 const isEdit = computed(() => !!props.booking)
 const fields = computed(() => stadiumsStore.activeStadium?.fields ?? [])
 
-const durations = [
-  { value: 30, label: '30 daq' },
-  { value: 60, label: '1 soat' },
-  { value: 90, label: '1.5 soat' },
-  { value: 120, label: '2 soat' },
-]
+const durations = computed(() => [
+  { value: 30, label: t('bookingModal.min30') },
+  { value: 60, label: t('bookingModal.hour1') },
+  { value: 90, label: t('bookingModal.hour15') },
+  { value: 120, label: t('bookingModal.hour2') },
+])
 
 interface Form {
   customerName: string
@@ -388,17 +393,17 @@ const fieldName = computed(() =>
   fields.value.find(f => f.id === form.value.fieldId)?.name ?? '—'
 )
 
-const MONTHS_UZ_SHORT = ['yan', 'fev', 'mar', 'apr', 'may', 'iyn', 'iyl', 'avg', 'sen', 'okt', 'noy', 'dek']
 const dateLabel = computed(() => {
   const d = dayjs(form.value.date)
-  return `${d.date()} ${MONTHS_UZ_SHORT[d.month()]}`
+  const monthsShort = tm('date.monthsShort') as unknown as any[]
+  return `${d.date()} ${rt(monthsShort[d.month()])}`
 })
 
 const durationLabel = computed(() => {
   const m = form.value.durationMin
-  if (m < 60) return `${m} daq`
+  if (m < 60) return `${m} ${t('booking.minute')}`
   const h = m / 60
-  return Number.isInteger(h) ? `${h} soat` : `${h} soat`
+  return `${h} ${t('booking.hour')}`
 })
 
 const conflict = computed(() => {
@@ -456,6 +461,7 @@ async function save() {
         endTime: endTime.value,
         notes: form.value.notes,
       })
+      toast.success(t('bookingModal.updated'))
     } else {
       await bookingsStore.createBooking({
         fieldId: Number(form.value.fieldId),
@@ -468,16 +474,20 @@ async function save() {
         notes: form.value.notes || null,
         price: form.value.price,
       })
+      toast.success(t('bookingModal.created'))
     }
     emit('saved')
   } catch (e: any) {
+    let msg: string
     if (e?.status === 409) {
-      serverError.value = e?.message || 'Bu vaqt band'
+      msg = extractApiErrorMessage(e?.data, e?.message || t('bookingModal.timeTaken'))
     } else if (e?.status === 0) {
-      serverError.value = 'Internet ulanmagan'
+      msg = t('common.internetOff')
     } else {
-      serverError.value = e?.message || 'Saqlashda xato'
+      msg = extractApiErrorMessage(e?.data, e?.message || t('bookingModal.savingError'))
     }
+    serverError.value = msg
+    toast.error(msg)
   } finally {
     saving.value = false
   }

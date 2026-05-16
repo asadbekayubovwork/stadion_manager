@@ -30,7 +30,7 @@
     <div class="px-4 pb-4">
       <h2 class="font-bold text-gray-900 mb-3">{{ t('clients.bookingHistory') }}</h2>
       <div v-if="loading && bookings.length === 0" class="text-center py-10 text-gray-400 text-sm">
-        Yuklanmoqda…
+        {{ t('common.loading') }}
       </div>
       <div v-else-if="bookings.length === 0" class="text-center py-10 text-gray-400 text-sm">
         {{ t('clients.noBookings') }}
@@ -60,8 +60,8 @@
       </div>
     </div>
   </div>
-  <div v-else-if="loading" class="flex items-center justify-center h-32 text-gray-400">Yuklanmoqda…</div>
-  <div v-else class="flex items-center justify-center h-32 text-gray-400">Mijoz topilmadi</div>
+  <div v-else-if="loading" class="flex items-center justify-center h-32 text-gray-400">{{ t('common.loading') }}</div>
+  <div v-else class="flex items-center justify-center h-32 text-gray-400">{{ t('clients.notFound') }}</div>
 </template>
 
 <script setup lang="ts">
@@ -117,5 +117,5 @@ function fieldName(fieldId: number) {
   }
   return String(fieldId)
 }
-function formatMoney(n: number) { return n.toLocaleString('uz-UZ') + " so'm" }
+function formatMoney(n: number) { return n.toLocaleString('uz-UZ').replace(/,/g, ' ') + ' ' + t('common.soum') }
 </script>
